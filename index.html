@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kvíz z organizace a projektů</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+/* Layout: dark-green masthead carries the summary; below it a two-column workbench (start / question bank) and a history ledger. Quiz is one focused sheet with a per-question segmented progress rail. */
+:root{
+  --bg:#f3f4f0; --surface:#ffffff; --surface-2:#f7f8f5; --ink:#111a14; --muted:#5d6a62; --line:#e0e5de; --line-strong:#cdd5cc;
+  --brand:#17553a; --brand-hover:#11472f; --brand-soft:#e3eee7; --brand-ink:#ffffff;
+  --hero:#0f3a28; --hero-2:#14482f; --hero-ink:#eef5f0; --hero-muted:#a9c4b4; --hero-line:rgba(255,255,255,.12);
+  --good:#17794c; --good-soft:#e3f3ea; --bad:#c0392b; --bad-soft:#fbe8e5; --warn:#9a6300; --warn-soft:#fbf0d8;
+  --display:"Newsreader", "Iowan Old Style", Georgia, serif;
+  --body:"Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:14px; --r-sm:10px;
+  --shadow:0 1px 0 rgba(17,26,20,.04), 0 1px 3px rgba(17,26,20,.06), 0 10px 30px -12px rgba(17,26,20,.12);
+  --shadow-sm:0 1px 2px rgba(17,26,20,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b100d; --surface:#131a16; --surface-2:#18201b; --ink:#e9f0eb; --muted:#93a39a; --line:#243029; --line-strong:#2f3c34;
+    --brand:#5fc490; --brand-hover:#79d2a4; --brand-soft:#173126; --brand-ink:#05140c;
+    --hero:#0f2419; --hero-2:#143021; --hero-ink:#eef5f0; --hero-muted:#93b3a1; --hero-line:rgba(255,255,255,.09);
+    --good:#5fd394; --good-soft:#12301f; --bad:#ff8678; --bad-soft:#3a1712; --warn:#efb453; --warn-soft:#33270e;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6); --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b100d; --surface:#131a16; --surface-2:#18201b; --ink:#e9f0eb; --muted:#93a39a; --line:#243029; --line-strong:#2f3c34;
+  --brand:#5fc490; --brand-hover:#79d2a4; --brand-soft:#173126; --brand-ink:#05140c;
+  --hero:#0f2419; --hero-2:#143021; --hero-ink:#eef5f0; --hero-muted:#93b3a1; --hero-line:rgba(255,255,255,.09);
+  --good:#5fd394; --good-soft:#12301f; --bad:#ff8678; --bad-soft:#3a1712; --warn:#efb453; --warn-soft:#33270e;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 30px -12px rgba(0,0,0,.6); --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3{margin:0;text-wrap:balance}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.container{max-width:880px;margin:0 auto;padding:0 20px}
+[hidden]{display:none!important}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:var(--r-sm);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:600 .95rem/1 var(--body);cursor:pointer;transition:background .15s,border-color .15s,transform .1s,box-shadow .15s;white-space:nowrap;box-shadow:var(--shadow-sm)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn:hover{border-color:var(--brand);background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible,.chipbtn:focus-visible,.opt:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 55%,transparent);outline-offset:2px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);box-shadow:0 1px 2px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.12)}
+.btn.primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.btn.ghost{background:transparent;border-color:transparent;box-shadow:none;color:var(--muted)}
+.btn.ghost:hover{background:var(--surface-2);color:var(--ink);border-color:var(--line)}
+.btn.lg{height:52px;padding:0 24px;font-size:1rem}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.chipbtn{height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:600 .9rem/1 var(--mono);cursor:pointer;transition:all .15s}
+.chipbtn:hover{border-color:var(--brand)}
+.chipbtn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+
+/* ---------- masthead ---------- */
+.mast{background:radial-gradient(1200px 400px at 85% -20%, var(--hero-2), transparent 60%), var(--hero);color:var(--hero-ink);padding:36px 0 30px;position:relative;overflow:hidden}
+.mast .fx{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.mast::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.18));pointer-events:none}
+.bgfx{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0}
+.view{position:relative;z-index:1}
+.band{position:absolute;left:0;right:0;top:0;height:340px;background:radial-gradient(900px 300px at 80% -10%, var(--hero-2), transparent 60%), var(--hero);overflow:hidden;z-index:0}
+.band .fx{position:absolute;inset:0;width:100%;height:100%;display:block}
+.band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,transparent,var(--bg));}
+.view > .stage, .view > main{position:relative;z-index:1}
+.topbar.dark{background:color-mix(in srgb,var(--hero) 82%,transparent);border-bottom-color:var(--hero-line);color:var(--hero-ink)}
+.topbar.dark .btn.ghost{color:var(--hero-muted)}
+.topbar.dark .btn.ghost:hover{background:rgba(255,255,255,.08);border-color:var(--hero-line);color:var(--hero-ink)}
+.topbar.dark .mid small{color:var(--hero-muted)}
+.topbar.dark .rail i{background:rgba(255,255,255,.16)}
+.topbar.dark .rail i.cur{background:var(--hero-ink);opacity:.7}
+.topbar.dark #qScore{color:#7fe0a8!important}
+.mast .container{position:relative;z-index:1;display:flex;flex-direction:column;gap:26px}
+.eyebrow{font:600 .74rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--hero-muted)}
+.mast h1{font-family:var(--display);font-weight:600;font-size:clamp(2rem,6vw,3rem);line-height:1.04;letter-spacing:-.02em;margin-top:10px}
+.mast p{margin:10px 0 0;color:var(--hero-muted);max-width:52ch}
+.mast h1,.mast p,.kpi{text-shadow:0 1px 12px rgba(4,20,12,.55)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hero-line);padding-top:18px;gap:8px}
+.kpi span{display:block;font-size:.78rem;color:var(--hero-muted)}
+.kpi b{display:block;font:600 clamp(1.5rem,4.5vw,2rem)/1.1 var(--mono);margin-top:6px;letter-spacing:-.03em}
+.kpi b small{font-size:.55em;color:var(--hero-muted);margin-left:2px}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,1fr);row-gap:16px}}
+
+/* ---------- home ---------- */
+.home{display:flex;flex-direction:column;gap:20px;padding-top:24px;padding-bottom:64px}
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:20px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px}
+.panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:16px}
+.panel h2{font-family:var(--display);font-weight:600;font-size:1.4rem;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.93rem;margin:4px 0 0}
+.flabel{font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:8px;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.field{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--muted);font-size:.9rem}
+.field input{width:88px;height:38px;padding:0 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:500 .95rem var(--mono)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2);cursor:pointer;margin-top:16px}
+.toggle .t{font-weight:600;font-size:.93rem}
+.toggle .d{font-size:.82rem;color:var(--muted)}
+.switch{position:relative;width:44px;height:26px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.switch i{position:absolute;inset:0;border-radius:99px;background:var(--line-strong);transition:background .2s}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.switch input:checked + i{background:var(--brand)}
+.switch input:checked + i::after{transform:translateX(18px)}
+.switch input:focus-visible + i{outline:3px solid color-mix(in srgb,var(--brand) 55%,transparent);outline-offset:2px}
+.start-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}
+.hint{font-size:.85rem;color:var(--muted)}
+
+.bank{display:flex;flex-direction:column;gap:16px;height:100%}
+.meter{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;display:flex}
+.meter i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.bank .btn{margin-top:auto}
+
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.sync.on i{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+.trend{display:block;width:100%;height:96px;margin:4px 0 10px}
+.ledger{list-style:none;margin:0;padding:0}
+.ledger li{display:grid;grid-template-columns:44px 1fr auto auto;gap:14px;align-items:center;padding:12px 4px;border-top:1px solid var(--line)}
+.ledger li:first-child{border-top:0}
+.ledger .no{font:600 .85rem var(--mono);color:var(--muted)}
+.ledger .m b{font-weight:600}
+.ledger .m small{display:block;color:var(--muted);font-size:.82rem}
+.score{font:600 .9rem var(--mono);padding:5px 10px;border-radius:8px;min-width:64px;text-align:center}
+.score.good{background:var(--good-soft);color:var(--good)} .score.warn{background:var(--warn-soft);color:var(--warn)} .score.bad{background:var(--bad-soft);color:var(--bad)}
+.empty{color:var(--muted);padding:18px 4px;text-align:left}
+@media (max-width:520px){.ledger li{grid-template-columns:1fr auto}.ledger .no{display:none}.ledger li .btn{grid-column:1/-1;width:100%}}
+
+/* ---------- top bar (inner pages) ---------- */
+.topbar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .container{display:flex;align-items:center;justify-content:space-between;gap:12px;height:62px}
+.topbar .mid{font:600 .95rem var(--mono)}
+.topbar .mid small{color:var(--muted);font-weight:500}
+.topbar .container.railwrap{display:block;height:auto}
+.rail{display:flex;gap:3px;padding:0 0 12px}
+.rail i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.rail i.cur{background:var(--brand);opacity:.45}
+.rail i.ok{background:var(--good)} .rail i.ko{background:var(--bad)}
+
+/* ---------- quiz ---------- */
+.stage{padding-top:26px;padding-bottom:64px}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:clamp(20px,4vw,34px)}
+.qmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;font:600 .78rem/1 var(--mono);color:var(--brand);background:var(--brand-soft);padding:6px 10px;border-radius:7px;letter-spacing:.02em}
+.tag.warn{color:var(--warn);background:var(--warn-soft)}
+.qtext{font-family:var(--display);font-weight:500;font-size:clamp(1.3rem,3.6vw,1.75rem);line-height:1.3;letter-spacing:-.01em;margin:16px 0 24px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:grid;grid-template-columns:34px 1fr 24px;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:500 1rem/1.45 var(--body);cursor:pointer;transition:border-color .15s,background .15s,transform .12s,box-shadow .15s}
+.opt:hover:not([disabled]){border-color:var(--brand);box-shadow:0 4px 14px -6px color-mix(in srgb,var(--brand) 40%,transparent);transform:translateY(-1px)}
+.opt .k{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface-2);font:600 .85rem var(--mono);color:var(--muted);transition:all .15s}
+.opt:hover:not([disabled]) .k{border-color:var(--brand);color:var(--brand)}
+.opt .mk{width:24px;height:24px}
+.opt[disabled]{cursor:default}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .k{background:var(--good);border-color:var(--good);color:var(--surface)}
+.opt.correct .mk{color:var(--good)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .k{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.opt.wrong .mk{color:var(--bad)}
+.opt.dim{opacity:.5}
+.fb{margin-top:20px;border-radius:12px;padding:16px 18px;background:var(--surface-2);border:1px solid var(--line);position:relative;overflow:hidden;animation:rise .25s ease-out}
+.fb::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+.fb.good::before{background:var(--good)} .fb.bad::before{background:var(--bad)}
+.fb h3{display:flex;align-items:center;gap:8px;font-size:1rem;margin-bottom:6px}
+.fb.good h3{color:var(--good)} .fb.bad h3{color:var(--bad)}
+.fb h3 svg{width:20px;height:20px}
+.fb .right{font-weight:600;margin:0 0 6px}
+.fb p{margin:0;color:var(--ink)}
+.fb .note{margin-top:10px;font-size:.86rem;color:var(--warn);display:flex;gap:6px}
+.qfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap}
+.kbd{font:500 .78rem var(--mono);padding:2px 6px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;background:var(--surface-2);color:var(--muted)}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (max-width:520px){.qfoot .btn.primary{width:100%}.qfoot .hint{display:none}}
+
+/* ---------- result ---------- */
+.result{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+@media (max-width:560px){.result{grid-template-columns:1fr;justify-items:start}}
+.ring{width:168px;height:168px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .v b{font:600 2.4rem/1 var(--mono);letter-spacing:-.04em}
+.ring .v small{display:block;font-size:.8rem;color:var(--muted);margin-top:4px;font-family:var(--body)}
+.ring circle{transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)}
+.result h2{font-family:var(--display);font-weight:600;font-size:1.8rem;letter-spacing:-.01em}
+.splits{display:flex;gap:10px;margin:14px 0 18px;flex-wrap:wrap}
+.split{padding:8px 12px;border-radius:10px;font:600 .9rem var(--mono)}
+.split.ok{background:var(--good-soft);color:var(--good)} .split.ko{background:var(--bad-soft);color:var(--bad)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- review & bank list ---------- */
+.pagehead{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.pagehead h1{font-family:var(--display);font-weight:600;font-size:clamp(1.7rem,5vw,2.3rem);letter-spacing:-.02em;line-height:1.1}
+.seg{display:inline-flex;padding:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;gap:2px}
+.seg button{height:34px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:600 .88rem var(--body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.seg button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 55%,transparent)}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;box-shadow:var(--shadow-sm)}
+.item::before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--line-strong)}
+.item.ok::before{background:var(--good)} .item.ko::before{background:var(--bad)}
+.item .q{font-weight:600;margin:10px 0 10px}
+.ans{display:flex;gap:8px;align-items:flex-start;font-size:.94rem;margin:4px 0}
+.ans svg{width:18px;height:18px;flex:none;margin-top:2px}
+.ans.ok{color:var(--good)} .ans.ko{color:var(--bad)}
+.ex{color:var(--muted);font-size:.92rem;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.ex .w{color:var(--warn)}
+
+.minis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.mini{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.mini span{font-size:.78rem;color:var(--muted)}
+.mini b{display:block;font:600 1.4rem/1.15 var(--mono);margin-top:4px}
+@media (max-width:560px){.minis{grid-template-columns:repeat(2,1fr)}}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 240px;position:relative}
+.search svg{position:absolute;left:12px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--muted)}
+.search input{width:100%;height:44px;padding:0 12px 0 38px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font:500 .95rem var(--body)}
+.select{height:44px;padding:0 34px 0 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23889' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;color:var(--ink);font:500 .92rem var(--body);appearance:none;-webkit-appearance:none}
+.listbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+details.item{padding:0}
+details.item summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:start;padding:16px 18px}
+details.item summary::-webkit-details-marker{display:none}
+details.item .no{font:600 .9rem var(--mono);color:var(--brand);padding-top:1px}
+details.item .qt{font-weight:600}
+details.item .chev{width:18px;height:18px;color:var(--muted);transition:transform .2s;margin-top:3px}
+details.item[open] .chev{transform:rotate(180deg)}
+.counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.c{font:600 .76rem/1 var(--mono);padding:5px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.c.ok{background:var(--good-soft);color:var(--good);border-color:transparent} .c.ko{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.body{padding:0 18px 16px 72px}
+.body ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.body li{display:grid;grid-template-columns:26px 1fr;gap:8px;font-size:.94rem;padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+.body li .l{font:600 .8rem var(--mono);color:var(--muted);padding-top:2px}
+.body li.right{background:var(--good-soft);color:var(--good);font-weight:600}
+.body li.right .l{color:var(--good)}
+@media (max-width:520px){.body{padding:0 16px 16px 16px}details.item summary{grid-template-columns:34px 1fr auto}}
+/* competition */
+.comp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.me-chip{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted)}
+.me-chip b{color:var(--ink)}
+.avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 .78rem var(--body);color:#fff;flex:none}
+.linkbtn{background:none;border:0;padding:0;color:var(--brand);font:600 .85rem var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.joinrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.joinrow input,.cform input{flex:1 1 200px;height:44px;padding:0 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:500 .95rem var(--body)}
+.msg{font-size:.88rem;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.msg.err{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+.board{width:100%;border-collapse:collapse;font-size:.93rem}
+.board th{font:600 .74rem var(--body);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.board th:nth-child(1),.board th:nth-child(2){text-align:left}
+.board td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.board td.p{text-align:left;font-family:var(--body);font-weight:600;white-space:normal}
+.board td.p .who{display:flex;align-items:center;gap:10px}
+.board td.r{text-align:left;color:var(--muted);width:36px}
+.board tr.me td{background:var(--brand-soft)}
+.board tr.me td:first-child{border-radius:8px 0 0 8px} .board tr.me td:last-child{border-radius:0 8px 8px 0}
+.medal{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font:700 .75rem var(--mono);color:#1b1300}
+.m1{background:linear-gradient(135deg,#f6d77a,#d9a521)} .m2{background:linear-gradient(135deg,#e6e9ec,#aab1b8)} .m3{background:linear-gradient(135deg,#f0c39a,#c07a43)}
+.tablewrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.youtag{font:600 .7rem var(--mono);color:var(--brand);background:var(--surface);border:1px solid var(--brand);padding:1px 6px;border-radius:5px}
+.chal{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.chal:first-child{border-top:0}
+.chal .t{font-weight:600}
+.chal small{display:block;color:var(--muted);font-size:.83rem}
+.chal .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.codebox{width:100%;margin:12px 0 10px;padding:12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:500 .88rem/1.5 var(--mono);resize:vertical}
+.cform{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px;border:1px dashed var(--line-strong);border-radius:12px;margin-bottom:12px;background:var(--surface-2)}
+@media (max-width:560px){.chal{grid-template-columns:1fr}.chal .acts{justify-content:flex-start}.board .hide-s{display:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<canvas class="bgfx" id="bgFx" aria-hidden="true"></canvas>
+
+<!-- ================= HOME ================= -->
+<div class="view" id="v-home">
+  <header class="mast">
+    <canvas class="fx" id="mastFx" aria-hidden="true"></canvas>
+    <div class="container">
+      <div>
+        <div class="eyebrow">Příprava na test · primat.cz</div>
+        <h1>Organizace a podnikatelské projekty</h1>
+        <p><span class="mono" id="poolCount">89</span> otázek se správnými odpověďmi a vysvětlením. Vyber, kolik jich chceš, a začni.</p>
+      </div>
+      <div class="kpis" aria-label="Souhrn pokusů">
+        <div class="kpi"><span>Pokusů</span><b id="sAttempts">0</b></div>
+        <div class="kpi"><span>Průměr</span><b id="sAvg">–</b></div>
+        <div class="kpi"><span>Nejlepší</span><b id="sBest">–</b></div>
+        <div class="kpi"><span>Poslední</span><b id="sLast">–</b></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container home">
+    <div class="grid2">
+      <section class="panel" aria-labelledby="h-start">
+        <div class="panel-h"><div><h2 id="h-start">Nový pokus</h2><p class="sub">Pořadí otázek i odpovědí se pokaždé zamíchá.</p></div></div>
+        <span class="flabel" id="cntLabel">Počet otázek</span>
+        <div class="chips" role="group" aria-labelledby="cntLabel" id="seg"></div>
+        <div class="field"><label for="customN">nebo vlastní počet</label><input id="customN" type="number" min="1" inputmode="numeric" placeholder="15"></div>
+        <label class="toggle" for="onlyWrong">
+          <span><span class="t">Jen chybné otázky</span><br><span class="d">Otázky, které jsi naposledy pokazil <span class="mono" id="wrongCount">(0)</span></span></span>
+          <span class="switch"><input type="checkbox" id="onlyWrong" role="switch"><i></i></span>
+        </label>
+        <div class="start-row">
+          <button class="btn primary lg" id="startBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Spustit kvíz</button>
+          <span class="hint" id="startHint"></span>
+        </div>
+      </section>
+
+      <section class="panel bank" aria-labelledby="h-bank">
+        <div><h2 id="h-bank">Banka otázek</h2><p class="sub">Kolik otázek už umíš a které ti ještě nejdou.</p></div>
+        <div class="meter" id="bankMeter" aria-hidden="true"></div>
+        <div class="legend" id="bankLegend"></div>
+        <button class="btn block" id="allBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Procházet všechny otázky</button>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="h-comp" id="compPanel">
+      <div class="comp-head">
+        <div><h2 id="h-comp">Soutěž s kamarády</h2><p class="sub">Založ výzvu, pošli kamarádům kód nebo odkaz a všichni dostanete stejné otázky. Výsledky si pošlete a kvíz z nich sestaví pořadí.</p></div>
+        <div class="me-chip" id="meChip" hidden></div>
+      </div>
+      <div id="compBody"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-hist">
+      <div class="panel-h">
+        <h2 id="h-hist">Historie pokusů</h2>
+        <span class="sync" id="sync"><i></i><span>Načítám…</span></span>
+      </div>
+      <svg class="trend" id="trend" viewBox="0 0 600 96" preserveAspectRatio="none" aria-hidden="true" hidden></svg>
+      <ul class="ledger" id="hist"></ul>
+    </section>
+  </main>
+</div>
+
+<!-- ================= QUIZ ================= -->
+<div class="view" id="v-quiz" hidden>
+  <div class="band" aria-hidden="true"><canvas class="fx" id="quizFx"></canvas></div>
+  <div class="topbar dark">
+    <div class="container">
+      <button class="btn ghost" id="quitBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Ukončit</button>
+      <div class="mid" id="qProg">1 <small>/ 10</small></div>
+      <div class="mono" id="qScore" style="font-weight:600;color:var(--good)">0 ✓</div>
+    </div>
+    <div class="container railwrap"><div class="rail" id="rail"></div></div>
+  </div>
+  <main class="container stage">
+    <article class="sheet">
+      <div class="qmeta">
+        <span class="tag" id="qNo">Otázka č. 1</span>
+        <span class="row" style="gap:8px"><span class="tag" id="qChal" hidden></span><span class="tag warn" id="qUnsure" hidden>Odpověď k ověření</span></span>
+      </div>
+      <h2 class="qtext" id="qText"></h2>
+      <div class="opts" id="qOpts"></div>
+      <div id="qFb"></div>
+      <div class="qfoot">
+        <span class="hint" id="kbHint"><span class="kbd">1</span>–<span class="kbd">4</span> vybere odpověď</span>
+        <span class="hint" id="kbHint2" hidden><span class="kbd">Enter</span> další otázka</span>
+        <button class="btn primary lg" id="nextBtn" hidden>Další otázka<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+    </article>
+  </main>
+</div>
+
+<!-- ================= RESULT ================= -->
+<div class="view" id="v-result" hidden>
+  <div class="band" aria-hidden="true"><canvas class="fx" id="resultFx"></canvas></div>
+  <main class="container stage" style="padding-top:72px">
+    <article class="sheet result">
+      <div class="ring">
+        <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/><circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="var(--good)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg>
+        <div class="v"><div><b id="rPct">0 %</b><small>úspěšnost</small></div></div>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:var(--muted)">Výsledek pokusu</div>
+        <h2 id="rMsg" style="margin-top:8px"></h2>
+        <div class="splits"><span class="split ok" id="rOk">0 správně</span><span class="split ko" id="rKo">0 špatně</span></div>
+        <div class="actions">
+          <button class="btn primary" id="rReview">Projít odpovědi</button>
+          <button class="btn" id="rChal" hidden>Poslat výsledek</button>
+          <button class="btn" id="rRetryWrong">Procvičit chybné</button>
+          <button class="btn ghost" id="rHome">Na přehled</button>
+        </div>
+      </div>
+    </article>
+  </main>
+</div>
+
+<!-- ================= REVIEW ================= -->
+<div class="view" id="v-review" hidden>
+  <div class="topbar"><div class="container">
+    <button class="btn ghost" id="rvBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Přehled</button>
+    <span class="score" id="rvPill"></span>
+  </div></div>
+  <main class="container stage">
+    <div class="pagehead">
+      <div><h1 id="rvTitle">Pokus</h1><p class="sub mono" id="rvSub"></p></div>
+      <div class="seg" id="rvFilter" role="group" aria-label="Filtr odpovědí">
+        <button aria-pressed="true" data-f="all">Vše</button>
+        <button aria-pressed="false" data-f="ko">Chybné</button>
+        <button aria-pressed="false" data-f="ok">Správné</button>
+      </div>
+    </div>
+    <div class="list" id="rvList"></div>
+  </main>
+</div>
+
+<!-- ================= CHALLENGE ================= -->
+<div class="view" id="v-chal" hidden>
+  <div class="topbar"><div class="container">
+    <button class="btn ghost" id="chBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Přehled</button>
+    <button class="btn primary" id="chPlay">Hrát výzvu</button>
+  </div></div>
+  <main class="container stage">
+    <div class="pagehead"><div><div class="eyebrow" style="color:var(--muted)">Výzva · kód <span class="mono" id="chCode"></span></div><h1 id="chTitle" style="margin-top:6px">Výzva</h1><p class="sub" id="chSub"></p></div></div>
+    <div class="list" style="margin-top:0">
+      <section class="panel">
+        <h2 style="font-size:1.15rem">1. Pozvi kamarády</h2>
+        <p class="sub">Pošli jim tuhle zprávu. Kdo otevře odkaz nebo zadá kód, dostane stejné otázky.</p>
+        <textarea class="codebox" id="chInvite" readonly rows="3" aria-label="Pozvánka"></textarea>
+        <div class="row"><button class="btn" id="chInvCopy">Kopírovat</button><button class="btn" id="chInvShare" hidden>Sdílet…</button><span class="hint" id="chInvMsg"></span></div>
+      </section>
+      <section class="panel">
+        <h2 style="font-size:1.15rem">2. Tvůj výsledek</h2>
+        <div id="chMine"></div>
+      </section>
+      <section class="panel">
+        <h2 style="font-size:1.15rem">3. Pořadí</h2>
+        <p class="sub">Vlož sem zprávy s výsledky od kamarádů (klidně víc najednou) a klepni na Přidat.</p>
+        <textarea class="codebox" id="chPaste" rows="3" placeholder="Sem vlož zprávu s výsledkem…" aria-label="Výsledky ostatních"></textarea>
+        <div class="row"><button class="btn primary" id="chAdd">Přidat výsledky</button><span class="hint" id="chAddMsg"></span></div>
+        <div class="tablewrap" style="margin-top:14px"><table class="board" id="chTable"></table></div>
+        <p class="sub" style="margin-top:12px">Počítá se první dokončený pokus. Při shodě rozhoduje rychlejší čas.</p>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ================= ALL QUESTIONS ================= -->
+<div class="view" id="v-all" hidden>
+  <div class="topbar"><div class="container">
+    <button class="btn ghost" id="allBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Přehled</button>
+    <button class="btn" id="aExpand">Rozbalit vše</button>
+  </div></div>
+  <main class="container stage">
+    <div class="pagehead"><div><h1>Všechny otázky</h1><p class="sub">Klepni na otázku a zobrazí se možnosti, správná odpověď a vysvětlení.</p></div></div>
+    <div class="minis">
+      <div class="mini"><span>Otázek</span><b id="aTotal">0</b></div>
+      <div class="mini"><span>Už zobrazeno</span><b id="aSeen">0</b></div>
+      <div class="mini"><span>Úspěšnost</span><b id="aRate">–</b></div>
+      <div class="mini"><span>Nikdy nezobrazeno</span><b id="aNever">0</b></div>
+    </div>
+    <div class="tools">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="aSearch" placeholder="Hledat v otázkách a odpovědích" aria-label="Hledat"></div>
+      <select class="select" id="aFilter" aria-label="Filtr">
+        <option value="all">Všechny</option>
+        <option value="wrong">Někdy špatně</option>
+        <option value="never">Nikdy nezobrazené</option>
+        <option value="perfect">Vždy správně</option>
+      </select>
+      <select class="select" id="aSort" aria-label="Řazení">
+        <option value="num">Podle čísla</option>
+        <option value="wrong">Nejvíc chyb</option>
+        <option value="rate">Nejhorší úspěšnost</option>
+        <option value="seen">Nejčastěji zobrazené</option>
+      </select>
+    </div>
+    <div class="listbar"><span class="hint mono" id="aCount"></span></div>
+    <div class="list" id="aList"></div>
+  </main>
+</div>
+
+<script>
+const Q = [
+{n:1,q:"Metodický postup přípravy podnikatelských projektů vychází ze zásady:",o:["Za jinak stejných podmínek","Uprav údaje, aby výsledek byl pozitivní","Všechny údaje musí být uvedeny podle nejlepšího vědomí a svědomí"],a:2,e:"Projekt je podklad pro rozhodování, takže údaje musí být pravdivé a poctivé. „Za jinak stejných podmínek“ (ceteris paribus) je princip analýzy citlivosti, ne zásada přípravy projektu."},
+{n:2,q:"Štábně liniová organizace je vhodná pro podniky s:",o:["Nepříliš proměnným výrobním programem","Velice proměnným výrobním programem"],a:0,e:"Štábně liniová struktura je dost těžkopádná: linie rozhoduje, štáby jen radí. Hodí se proto pro stabilní výrobní program. Pro často se měnící program jsou vhodnější pružnější struktury (divizní, maticová)."},
+{n:3,q:"Co ovlivňuje účinnost práce:",o:["Výkonná práce, dispozitivní práce, plánování, kontrola","Pracovní síly, pracovní prostředky, pracovní předměty","Kontrola, plánování, hmotný investiční majetek, materiály"],a:1,e:"Účinnost práce závisí na třech faktorech pracovního procesu: pracovních silách, pracovních prostředcích a pracovních předmětech."},
+{n:4,q:"Jaký je jeden z nejvýhodnějších ukazatelů pro mezipodnikové srovnání podnikatelské výkonnosti uvnitř odvětví a sektorů národního hospodářství?",o:["ABC","EVA","PETR","EAGF"],a:1,e:"EVA (Economic Value Added) = provozní zisk po zdanění minus náklady na veškerý vložený kapitál. Protože započítává náklady kapitálu, dá se srovnávat mezi podniky v odvětví."},
+{n:5,q:"Co nepatří mezi průřezové funkce organizace:",o:["Financování","Účetnictví","Personalistika"],a:0,u:true,e:"Personalistika a účetnictví (informační funkce) prostupují všemi útvary, proto jsou průřezové. Financování se v tomto členění řadí k hlavním funkcím."},
+{n:6,q:"Ukazatel hospodářského výsledku před zdaněním má zkratku:",o:["EBITDA","EBT","EBIT"],a:1,e:"EBT = Earnings Before Taxes, zisk před zdaněním. EBIT je zisk před úroky a daněmi, EBITDA navíc před odpisy."},
+{n:7,q:"Je žádoucí, aby rentabilita podnikem využívaného kapitálu ve vztahu ke zdaněné průměrné úrokové sazbě byla:",o:["Stejná","Nižší","Vyšší"],a:2,e:"Když rentabilita kapitálu převyšuje zdaněnou úrokovou sazbu i × (1 − t), cizí kapitál zvyšuje rentabilitu vlastního kapitálu. To je kladný účinek finanční páky."},
+{n:8,q:"Zkratka pro rentabilitu vlastního kapitálu zní:",o:["ROCE","ROA","ROE"],a:2,e:"ROE = Return on Equity = čistý zisk / vlastní kapitál. ROA je rentabilita aktiv, ROCE rentabilita dlouhodobě investovaného kapitálu."},
+{n:9,q:"Mezi obecně platné požadavky podnikatelského projektu (jako dokumentu pro schvalovací proceduru) nepatří:",o:["Jednoduchost a srozumitelnost","Stručnost a přehlednost dokumentu","Nutnost použití statistických metod"],a:2,e:"Projekt má být jednoduchý, srozumitelný, stručný a přehledný. Statistické metody se použít mohou, ale nejsou obecným požadavkem."},
+{n:10,q:"Účelem analýzy citlivosti je:",o:["Zjišťování míry závislosti určitého ekonomického kritéria na faktorech, které tento výsledek ovlivňují","Zjišťování citlivosti platební schopnosti podniku na platební morálce odběratelů","Zjišťování vlivu rizikovosti jednotlivých podnikatelských projektů na maximalizaci zisku podniku"],a:0,e:"Analýza citlivosti zjišťuje, jak se změní výsledné kritérium (např. NPV nebo zisk), když se změní jeden vstupní faktor (cena, objem, náklady) a ostatní zůstanou stejné."},
+{n:11,q:"Vypracování technickoorganizační a technickoekonomické studie slouží k:",o:["Shromažďování informací o vnitřním a vnějším prostředí podniku","Posouzení disponibilnosti podnikových výrobních faktorů pro realizaci plánovaných organizačních změn","Prověření proveditelnosti a reálnosti dosažení ekonomického přínosu realizace projektu"],a:2,e:"Technickoekonomická studie (feasibility study) ověřuje, zda je projekt technicky proveditelný a zda reálně přinese očekávaný ekonomický efekt."},
+{n:12,q:"Ukazatel hospodářského výsledku z provozní činnosti před započtením odpisů má zkratku:",o:["EAT","EBIT","EBITDA"],a:2,e:"EBITDA = zisk před úroky, daněmi a odpisy (Depreciation and Amortization). Odpisy se k EBIT přičítají zpět."},
+{n:13,q:"Jaký typ činnosti nepatří mezi přímé činnosti v rámci infrastruktury podniku?",o:["Obrábění součástek","Propagace","Časové plánování"],a:2,e:"V Porterově hodnotovém řetězci přímé činnosti přímo vytvářejí hodnotu pro zákazníka (obrábění, montáž, propagace). Časové plánování je nepřímá činnost: přímé činnosti umožňuje, ale hodnotu samo nevytváří."},
+{n:14,q:"Ukazatel likvidity:",o:["Měří celkovou rychlost obratu vložených prostředků","Měří hospodářský výsledek s daným objemem podnikových zdrojů","Měří schopnost podniku hradit své závazky"],a:2,e:"Likvidita = platební schopnost. Ukazatele likvidity porovnávají oběžná aktiva s krátkodobými závazky."},
+{n:15,q:"Cílem řízení rizika je:",o:["Udržet dobu splácení závazků kratší, než je doba životnosti projektu","Stanovit kapitálové výdaje projektů","Analyzovat faktory, které nejvíce ovlivňují riziko projektu"],a:2,u:true,e:"Řízení rizika začíná analýzou faktorů, které nejvíce ovlivňují výsledek projektu, a hledáním opatření, jak je omezit. Ostatní možnosti s rizikem přímo nesouvisí. V původním testu je tato možnost useknutá („…které nejvíce…“)."},
+{n:16,q:"Ve které fázi projektu se rozhoduje o jeho přijetí či nepřijetí?",o:["Investiční","Vstupní","Předinvestiční"],a:2,e:"V předinvestiční fázi vzniká studie příležitosti a technickoekonomická studie. Na jejich základě se rozhoduje, zda projekt přijmout."},
+{n:17,q:"Jaký typ činnosti nepatří mezi nepřímé činnosti v rámci infrastruktury podniku?",o:["Administrativní řízení výzkumu","Údržba","Činnosti personálu odbytu"],a:2,e:"Práce prodejců (personálu odbytu) přímo vytváří hodnotu, je to tedy přímá činnost. Údržba a administrativní řízení výzkumu jsou nepřímé, podpůrné činnosti."},
+{n:18,q:"Vyplň vynechané místo (schéma výrobních faktorů; obrázek se z testu nezkopíroval):",o:["Dispozitivní práce","Výkonná práce","Pracovní síly"],a:0,u:true,e:"Výrobní faktory se dělí na dispozitivní práci (řízení: plánování, organizace, kontrola) a elementární faktory (výkonná práce, pracovní prostředky, materiály). Bez obrázku nejde ověřit, který pojem ve schématu chybí, tak si to zkontroluj v testu."},
+{n:19,q:"Pracnost provádění výkonu lze stanovit podle vzorce:",o:["Pp = T / ΣQ","PP(A/E) = Z(OP) × (P/E)(SP)","PP = ΣQ / T"],a:0,e:"Pracnost = spotřebovaný čas (T) na jednotku výkonu (Q). Je to převrácená hodnota produktivity živé práce (Q / T)."},
+{n:20,q:"Efektivnost, s jakou firma řídí využití svého majetku, měří:",o:["Ukazatel likvidity","Ukazatel řízení aktiv","Ukazatel výnosnosti"],a:1,e:"Ukazatele řízení aktiv (aktivity), např. obrat aktiv nebo doba obratu zásob, měří, jak efektivně firma využívá svůj majetek."},
+{n:21,q:"Metodický postup přípravy podnikatelských projektů pro mimopodnikové příjemce (investory):",o:["Může sestavit pouze manažer na nejvyšší úrovni řízení podniku","Nepodléhá žádným zvláštním metodickým předpisům","Podléhá speciálním metodickým předpisům"],a:2,e:"Projekty pro externí příjemce (banky, investory, dotační programy EU, UNIDO) musí dodržet jejich speciální metodiku a předepsanou strukturu."},
+{n:22,q:"Hospodářský výsledek po zdanění vyjadřuje ukazatel:",o:["EBT","EAT","EBITDA"],a:1,e:"EAT = Earnings After Taxes, čistý zisk po zdanění."},
+{n:23,q:"Mezi strategické cíle organizace nepatří:",o:["Sociální předpoklady","Zabezpečování kvality","Technické podmínky"],a:0,alt:[2],u:true,e:"Zabezpečování kvality je typický strategický cíl. „Sociální předpoklady“ a „technické podmínky“ nejsou cíle, ale podmínky, se kterými musí organizace počítat. Otázka je proto postavená špatně a kvíz uzná obě tyto odpovědi."},
+{n:24,q:"Výrobní proces:",o:["Věda o kvalitativních a kvantitativních změnách, k nimž dochází na pracovních předmětech v průběhu pracovního procesu","Trvalý proces zdokonalování pracovních činností a procesů prostřednictvím optimálního využívání základních faktorů v konkrétním pracovním procesu","Představuje uspořádaný soubor lidmi připravovaných, řízených a realizovaných pracovních a technologických dějů nezbytných k produkci jednotlivých výrobků"],a:2,e:"Výrobní proces zahrnuje pracovní i technologické děje (pracovní proces + technologický proces) nutné k výrobě výrobku. Druhá možnost je definice racionalizace práce."},
+{n:25,q:"Zkratka pro rentabilitu úhrnných vložených prostředků zní:",o:["ROA","ROE","EBIT"],a:0,e:"ROA = Return on Assets = zisk / celková aktiva, tedy rentabilita všech vložených prostředků."},
+{n:26,q:"Jak lze dělit dispozitivní faktory:",o:["Originální, derivativní","Řídící, derivativní","Elementární, originální"],a:0,e:"Podle Gutenberga se dispozitivní faktor dělí na originální (vedení podniku) a derivativní, tedy odvozený (plánování, organizace, kontrola)."},
+{n:27,q:"Ukazatele aktivity:",o:["Měří schopnost podniku hradit své závazky","Měří celkovou rychlost obratu vložených prostředků","Měří hospodářský výsledek s daným objemem podnikových zdrojů"],a:1,e:"Ukazatele aktivity (obratovosti) měří, kolikrát se majetek za rok obrátí, nebo jak dlouho je v něm vázán."},
+{n:28,q:"Postaudit podnikatelského projektu se zpravidla provádí:",o:["Jeden rok po dokončení projektu","Tři měsíce od začátku projektu","V průběhu předinvestiční přípravy"],a:0,e:"Postaudit se dělá zhruba rok po dokončení a uvedení projektu do provozu, kdy už jsou k dispozici skutečné výsledky."},
+{n:29,q:"Který z následujících aspektů neobsahuje popis pracoviště?",o:["Metodické návody k řešení úkolů","Věcná specifikace pracoviště","Bezpečnostní pokyny"],a:0,e:"Popis pracoviště obsahuje věcnou specifikaci úkolů, požadavky na pracovníka, organizační vazby a bezpečnostní pokyny. Metodické návody k řešení úkolů do něj nepatří."},
+{n:30,q:"Jakými třemi základními faktory je podmíněno uskutečňování pracovních procesů:",o:["Lidmi, pracovními prostředky, pracovním předmětem","Pracovními prostředky, pracovní dobou, technologickými parametry","Lidmi, pracovní dobou, technologickými parametry"],a:0,e:"Pracovní proces potřebuje tři faktory: člověka (pracovní sílu), pracovní prostředky (stroje, nástroje) a pracovní předmět (materiál, který se zpracovává)."},
+{n:31,q:"Lean management se zabývá:",o:["Zeštíhlováním řízení","Zeštíhlováním variabilních faktorů","Zeštíhlováním portfolia"],a:0,e:"Lean management = štíhlé řízení: méně stupňů řízení a odstraňování plýtvání a zbytečných činností."},
+{n:32,q:"Mezi statické metody hodnocení investic nepatří:",o:["Metoda výnosnosti investic (ROI)","Metoda doby návratnosti (DN)","Metoda čisté současné hodnoty (ČSH)"],a:2,e:"ČSH (NPV) diskontuje peněžní toky, zohledňuje tedy časovou hodnotu peněz. Je to dynamická metoda. ROI a doba návratnosti jsou statické."},
+{n:33,q:"Proces tvorby a realizace podnikatelských záměrů a projektů má:",o:["Logický charakter","Dynamický charakter","Statický charakter"],a:1,e:"Projekt se v čase vyvíjí, upřesňuje a mění od nápadu až po provoz, má tedy dynamický charakter."},
+{n:34,q:"Jaké je jiné označení pro funkcionální řídící systém?",o:["Víceliniový systém","Striktní systém","Divizionální systém"],a:0,e:"Funkcionální (Taylorův) systém je víceliniový: pracovník má více nadřízených, pro každou funkci jiného."},
+{n:35,q:"Ekonomická efektivnost investice znamená:",o:["Ziskovost investice po celou dobu životnosti","Kladný rozdíl mezi kapitálovými výdaji a příjmy z investice","Ziskovost investice v jednotlivých letech životnosti"],a:0,e:"Investice je ekonomicky efektivní, když přináší zisk za celou dobu životnosti, ne nutně v každém roce. Druhá možnost je formulovaná obráceně (výdaje minus příjmy)."},
+{n:36,q:"Cílem technickoekonomické studie je:",o:["Aktualizace podnikové strategie na základě technických a ekonomických analýz současných podnikatelských projektů","Rozpracování technických, ekonomických, finančních a manažerských požadavků projektu","Analýza řízení finanční situace podniku"],a:1,e:"Technickoekonomická studie podrobně rozpracuje technické, ekonomické, finanční a manažerské požadavky projektu jako podklad pro rozhodnutí o investici."},
+{n:37,q:"Likvidita:",o:["Zadluženost","Platební schopnost","Výnosnost"],a:1,e:"Likvidita = schopnost podniku včas hradit své závazky, tedy platební schopnost. Výnosnost je rentabilita, zadluženost je samostatná skupina ukazatelů."},
+{n:38,q:"Ukazatel hospodářského výsledku z provozní činnosti má zkratku:",o:["EBIT","EBT","EBITDA"],a:0,e:"EBIT (Earnings Before Interest and Taxes) zhruba odpovídá provoznímu výsledku hospodaření."},
+{n:40,q:"Podnikatelský projekt lze rozdělit do následujících fází:",o:["Zavedení, růst, útlum","Předinvestiční, investiční, provozní","Inovace, realizace, postaudit"],a:1,e:"Klasické členění (UNIDO): předinvestiční fáze (studie, rozhodnutí), investiční fáze (výstavba) a provozní fáze (provoz, postaudit)."},
+{n:41,q:"Technickoekonomická studie bývá označována názvem:",o:["Feasibility study","Analýza trhu","Analýza citlivosti"],a:0,e:"Technickoekonomická studie = feasibility study, tedy studie proveditelnosti."},
+{n:42,q:"Mezi důvody pro použití cizího kapitálu nepatří:",o:["Daňový efekt","Provozní páka","Finanční páka"],a:1,e:"Cizí kapitál se používá kvůli daňovému štítu (úroky snižují základ daně) a finanční páce. Provozní páka souvisí s podílem fixních nákladů, ne se způsobem financování."},
+{n:43,q:"Organizace pracovních procesů:",o:["Uspořádaný souhrn dějů, v nichž lidé svou prací, obvykle za pomoci pracovních prostředků, přetvářejí pracovní předměty na výsledné výrobky","Trvalý proces zdokonalování pracovních činností a procesů prostřednictvím optimálního využívání základních faktorů v konkrétním pracovním procesu","Vědní disciplína zabývající se studiem konkrétní lidské práce a řešením vztahů mezi ostatními podnikovými výrobními faktory působícími v průběhu jednotlivých pracovních procesů v daném podniku"],a:2,e:"Organizace pracovních procesů je vědní disciplína o lidské práci a vztazích mezi výrobními faktory. První možnost definuje pracovní proces, druhá racionalizaci práce."},
+{n:44,q:"Cíl organizování:",o:["Optimální uspořádání pracovních sil","Optimální uspořádání pracovních dějů","Optimální uspořádání pracovních prostředků"],a:1,u:true,e:"Organizování směřuje k optimálnímu uspořádání pracovních dějů (procesů) v čase a prostoru. V nich se teprve kombinují pracovní síly, prostředky a předměty."},
+{n:45,q:"Který z uvedených činitelů nepatří mezi aspekty organizační architektury?",o:["Identifikace účelu","Technologická koncepce","Systém útvarové organizace"],a:2,e:"Organizační architekturu tvoří účel, strukturní materiál a technologická koncepce, podobně jako u stavby. Systém útvarové organizace je až výsledek, ne aspekt architektury."},
+{n:46,q:"Čím se zabývá útvarová organizace podniku?",o:["Spojením základních organizačních prvků do organizační struktury","Analýzou a rozčleněním celkového úkolu podniku mezi jednotlivé útvary podniku","Uspořádáním postupu jednání"],a:0,u:true,e:"Útvarová organizace (Aufbauorganisation) spojuje základní organizační prvky (pracovní místa, útvary) do organizační struktury. Uspořádání postupu jednání patří k procesní organizaci."},
+{n:47,q:"Který z uvedených autorů je představitelem německé klasické školy podnikové organizace:",o:["Joachim Friedrich","Walter Eucken","Günter Wöhe"],a:2,e:"Günter Wöhe je hlavní představitel německé nauky o podniku. Walter Eucken byl národohospodář, otec ordoliberalismu."},
+{n:48,q:"Doporučená hodnota pohotové likvidity oběžných aktiv v poměru ke krátkodobým závazkům je v rozmezí:",o:["0,9–1,1","1–1,5","2–2,5"],a:1,e:"Pohotová likvidita = (oběžná aktiva − zásoby) / krátkodobé závazky, doporučeno 1–1,5. Pro srovnání: běžná likvidita 2–2,5, okamžitá 0,9–1,1."},
+{n:49,q:"Podnikatelské projekty jsou vytvářeny:",o:["Pouze pro vnitropodnikové potřeby","Pro externí investory v případě potřeby","Pro vnitropodnikové i mimopodnikové účely"],a:2,e:"Projekty slouží vedení podniku při rozhodování i externím subjektům (bankám, investorům, poskytovatelům dotací)."},
+{n:50,q:"Nejpřísnější formou organizačního členění podniku je:",o:["Funkcionální řídící systém","Štábní řídící systém","Liniový řídící systém"],a:2,e:"Liniový systém má přísnou jednotu přikazování: každý má právě jednoho nadřízeného a pokyny jdou jen po linii."},
+{n:51,q:"Mezi obecně platné požadavky podnikatelského projektu (jako dokumentu pro schvalovací proceduru) nepatří:",o:["Orientace na budoucnost","Orientace na návratnost vloženého kapitálu","Orientace na maximalizaci krátkodobého zisku"],a:2,e:"Projekt má být orientovaný na budoucnost a na návratnost kapitálu v dlouhém období. Maximalizace krátkodobého zisku mezi požadavky nepatří."},
+{n:52,q:"Postaudit podnikatelského projektu se zaměřuje především:",o:["Na dosažení komplementárních cílů podniku v souvislosti s realizací podnikatelských projektů","Na zhodnocení úrovně využívání podnikových výrobních faktorů pro realizaci podnikatelského projektu","Na posouzení shody základních předpokladů, ze kterých projekt vycházel, se skutečností po realizaci projektu"],a:2,e:"Postaudit porovná předpoklady projektu (tržby, náklady, termíny) se skutečností po realizaci a z odchylek vyvodí poučení pro další projekty."},
+{n:53,q:"Relativní výnos, který projekt během svého životního cyklu poskytuje, vyjadřuje ukazatel:",o:["Čistá současná hodnota","Vnitřní výnosové procento","Index ziskovosti"],a:1,e:"Vnitřní výnosové procento (IRR) je diskontní sazba, při které NPV = 0, tedy relativní (procentní) výnosnost projektu. NPV je absolutní částka v Kč."},
+{n:54,q:"Podíl diskontovaných peněžních příjmů z investice na jednotku investovaného kapitálu vyjadřuje:",o:["Index rentability","Čistá současná hodnota","Vnitřní výnosové procento"],a:0,e:"Index rentability (ziskovosti) = současná hodnota příjmů / kapitálový výdaj. Říká, kolik Kč současné hodnoty přinese 1 Kč investice."},
+{n:55,q:"Pracovní kapitál generují:",o:["Oběžná aktiva","Stálá aktiva","Zaměstnanci"],a:0,e:"Pracovní kapitál = oběžná aktiva − krátkodobé závazky, tvoří ho tedy oběžná aktiva."},
+{n:56,q:"Nejdůležitějším formálním znakem rozdělování úkolů je:",o:["Delegace řídících pravomocí","Rozdělení úkolů na výkonné a řídící","Vytváření hierarchie pracovišť"],a:1,u:true,e:"Základní formální znak dělby úkolů je oddělení řídících (dispozitivních) úkolů od výkonných. Teprve z něj vzniká hierarchie a delegace pravomocí."},
+{n:57,q:"Mezi obecně platné požadavky podnikatelského projektu (jako dokumentu pro schvalovací proceduru) nepatří:",o:["Prokázání návratnosti a výnosnosti vloženého kapitálu","Odhad budoucích příjmů na deset let dopředu","Nezakrývání slabých míst a rizik"],a:1,e:"Projekt má prokázat návratnost a nezakrývat rizika. Pevný odhad příjmů přesně na deset let obecným požadavkem není, horizont se řídí životností projektu."},
+{n:58,q:"Jaký z činitelů necharakterizuje organizační architekturu:",o:["Úkol","Strukturní materiál","Účel"],a:0,e:"Organizační architekturu charakterizuje účel, strukturní materiál a technologická koncepce. Úkol mezi tyto činitele nepatří."},
+{n:59,q:"V liniovém systému s průřezovými řídícími funkcemi jsou útvary koncipovány jako:",o:["Štábní s přikazovacími pravomocemi","Funkční s přikazovacími pravomocemi","Štábní bez přikazovacích pravomocí"],a:1,u:true,e:"Průřezové útvary (např. personální) mají ve své funkci odbornou přikazovací pravomoc napříč liniemi. Tím se liší od štábů, které jen radí."},
+{n:60,q:"Který ukazatel představuje rozdíl současné hodnoty všech budoucích příjmů projektu a současné hodnoty všech výdajů projektu?",o:["IRR (VVP)","NPV","EBIT"],a:1,e:"NPV = současná hodnota příjmů − současná hodnota výdajů. Projekt je přijatelný, když NPV > 0."},
+{n:61,q:"Pracovní proces:",o:["Představuje uspořádaný soubor lidmi připravovaných, řízených a realizovaných pracovních a technologických dějů nezbytných k produkci jednotlivých výrobků","Uspořádaný soubor dějů, při nichž dochází v průběhu výroby ke kvantitativním a kvalitativním změnám pracovního předmětu, nejen při vynakládání lidské práce, ale i samočinným působením pracovních prostředků a přírodních procesů","Uspořádaný souhrn dějů, v nichž lidé svou prací, obvykle za pomoci pracovních prostředků, přetvářejí pracovní předměty na výsledné výrobky"],a:2,e:"Pracovní proces: lidé svou prací za pomoci pracovních prostředků přetvářejí pracovní předměty. První možnost je výrobní proces, druhá technologický proces."},
+{n:62,q:"Investiční projekt je výhodný, pokud zjištěné ROI je vyšší nežli:",o:["Bezriziková míra úročení","Rozdíl mezi vlastním a cizím kapitálem","Čistá současná hodnota"],a:0,e:"Investice dává smysl, jen když vynese víc než bezrizikové uložení peněz (např. státní dluhopisy). Ostatní možnosti nejsou míry výnosnosti."},
+{n:63,q:"Tvorbu podnikatelského projektu v zemědělství významně ovlivňuje:",o:["Vysoká elasticita poptávky po zemědělské produkci, vysoká sezónnost práce, cenová strnulost","Vysoká závislost na přírodních podmínkách, dlouhý výrobní cyklus, neelasticita poptávky po zemědělské produkci","Omezená disponibilita zemědělské půdy, krátký výrobní cyklus a rychlý obrat produkce"],a:1,e:"Zemědělství silně závisí na přírodních podmínkách, má dlouhý výrobní cyklus a poptávka po potravinách je neelastická."},
+{n:64,q:"Ukazatel rentability:",o:["Měří schopnost podniku hradit své závazky včas","Měří hospodářský výsledek s daným objemem podnikových zdrojů"],a:1,e:"Rentabilita (výnosnost) poměřuje zisk s vloženými zdroji (aktivy, vlastním kapitálem, tržbami)."},
+{n:65,q:"Základním organizačním úkolem je směřování k organizačnímu optimu, které je determinováno:",o:["Účelným poměrem","Principem organizační rovnováhy","Substitučním principem"],a:1,u:true,e:"Organizační optimum je rovnováha mezi přeorganizováním (příliš mnoho pevných pravidel) a podorganizováním (příliš mnoho improvizace). Substituční princip (Gutenberg) popisuje cestu k optimu."},
+{n:67,q:"Čím je vyšší provozní páka podniku, tím je jeho podnikatelské riziko:",o:["Nemá vliv","Vyšší","Nižší"],a:1,e:"Vysoká provozní páka = vysoký podíl fixních nákladů. Malý pokles tržeb pak způsobí velký pokles zisku, takže podnikatelské riziko roste."},
+{n:68,q:"Jaký z činitelů charakterizuje organizační architekturu:",o:["Technologická koncepce","Časový plán","Liniové uspořádání"],a:0,e:"Technologická koncepce je spolu s účelem a strukturním materiálem jedním z činitelů organizační architektury."},
+{n:69,q:"Tržní cenu akcií firmy k jejím výnosům a k účetní hodnotě akcie vztahují:",o:["Ukazatele výnosnosti","Ukazatele likvidity","Ukazatele tržní hodnoty"],a:2,e:"Ukazatele tržní hodnoty (P/E, P/BV) vztahují tržní cenu akcie k zisku na akcii a k účetní hodnotě akcie."},
+{n:70,q:"Produktivitu živé práce lze stanovit dle vzorce:",o:["Pp = T / ΣQ","PP(A/E) = Z(OP) × (P/E)(SP)","PP = ΣQ / T"],a:2,e:"Produktivita živé práce = objem výkonů (Q) / spotřebovaný čas (T). Převrácená hodnota T / Q je pracnost."},
+{n:71,q:"Investice do projektu je výhodná, pokud je vnitřní výnosové procento vyšší nežli:",o:["Bezriziková míra úročení","Diskontní míra zahrnující riziko","Čistá současná hodnota"],a:1,e:"IRR se porovnává s požadovanou výnosností, tedy s diskontní mírou včetně rizikové přirážky. Když je IRR vyšší, vyjde NPV při této míře kladná."},
+{n:72,q:"Doporučená hodnota běžné likvidity oběžných aktiv v poměru ke krátkodobým závazkům je v rozmezí:",o:["0,9–1,1","2–2,5","1–1,5"],a:1,e:"Běžná likvidita = oběžná aktiva / krátkodobé závazky, doporučeno 2–2,5 (některé zdroje uvádějí 1,5–2,5)."},
+{n:73,q:"Doplň vynechané místo ve schématu PRACOVNÍ PROCES: Pracovní síly ↔ Pracovní prostředky ↔ ?",o:["Pracovní předměty","Pracovní doba","Výkonná práce","Dispozitivní práce"],a:0,e:"Pracovní proces tvoří tři faktory: pracovní síly, pracovní prostředky a pracovní předměty."},
+{n:75,q:"Když se celkové tržby rovnají celkovým nákladům:",o:["Nejsme schopni platit dlouhodobé závazky","Dosáhli jsme bodu zvratu","Čistá současná hodnota se rovná nule"],a:1,e:"Bod zvratu je objem produkce, při kterém se tržby rovnají celkovým nákladům a zisk je nulový."},
+{n:76,q:"Technologický proces:",o:["Uspořádaný soubor dějů, při nichž dochází v průběhu výroby ke kvantitativním a kvalitativním změnám pracovního předmětu, nejen při vynakládání lidské práce, ale i samočinným působením pracovních prostředků a působením poznaných, ovládaných a řízených přírodních procesů","Proces zkoumání kvalitativních a kvantitativních změn, k nimž dochází na pracovních předmětech v průběhu pracovního procesu","Představuje uspořádaný soubor lidmi připravovaných, řízených a realizovaných pracovních a technologických dějů nezbytných k produkci jednotlivých výrobků"],a:0,e:"Technologický proces zahrnuje i děje, které probíhají bez lidské práce: samočinné působení strojů a přírodní procesy (kvašení, zrání, růst). Třetí možnost je výrobní proces."},
+{n:77,q:"Hlavním zdrojem dat pro výpočet čisté současné hodnoty je:",o:["Rozvaha","Účetní závěrka","Cash flow"],a:2,e:"NPV se počítá z peněžních toků (příjmů a výdajů), ne z účetního zisku. Hlavním zdrojem je proto cash flow."},
+{n:78,q:"Která z níže uvedených organizačních změn definovaných prof. D. Josephem má nejvyšší míru dosahu změny?",o:["TQM","Restrukturace","Rightsizing"],a:1,u:true,e:"Restrukturace mění celou strukturu podniku, a má proto nejširší dosah. TQM je průběžné zlepšování kvality, rightsizing úprava velikosti (počtu pracovníků)."},
+{n:79,q:"Štábní útvary ve štábně liniovém řídícím systému:",o:["Nemají primární ani sekundární úkoly","Rozdělují úkoly v rámci své linie","Mají přikazovací pravomoc ve své linii"],a:0,u:true,e:"Štáby nemají přikazovací pravomoc a nerozdělují úkoly v linii, jen radí a připravují podklady. Správná je tedy jediná zbývající možnost (vyloučením)."},
+{n:80,q:"Kdy hovoříme o přeorganizovaném podniku?",o:["Pokud jsou úpravy ve vztahu k úkolům příliš silné","Pokud jsou úpravy ve vztahu k úkolům příliš slabé","Pokud organizační strukturu tvoří více než tři stupně"],a:0,e:"Přeorganizování nastane, když je regulace (pevná pravidla) vzhledem k úkolům příliš silná a podnik ztrácí pružnost. Opakem je podorganizování."},
+{n:81,q:"Jaké jsou typy činností v rámci infrastruktury podniku?",o:["Plánování, organizování, kontrola","Přímé, nepřímé, zabezpečení kvality","Věcná specifikace úkolů, definování požadavků na pracovníky, uvedení organizačních vztahů"],a:1,e:"Porter dělí činnosti na přímé (přímo tvoří hodnotu), nepřímé (umožňují přímé) a zabezpečování kvality (kontrola, testování)."},
+{n:83,q:"Jaké rozlišujeme výrobní faktory:",o:["Elementární faktory, výkonnou práci, nemovitosti, technologie a stroje","Dispozitivní práci, výkonnou práci, hmotný investiční majetek, materiály","Plánování, rozhodování, vedení, organizace, kontrola"],a:1,e:"Podle Gutenberga: dispozitivní práce (řízení) a elementární faktory, tj. výkonná práce, pracovní prostředky (hmotný investiční majetek) a materiály."},
+{n:84,q:"V procesu přípravy a realizace podnikatelských projektů dochází k vývojovým změnám:",o:["Většinou po celé období životnosti projektu","Pouze v předinvestiční fázi projektu","Pouze v období do ukončení investiční fáze projektu"],a:0,e:"Projekt se vyvíjí a upravuje po celou dobu životnosti: v přípravě, realizaci i provozu."},
+{n:85,q:"Investice do projektu není výhodná, pokud je čistá současná hodnota:",o:["Menší než nula","Nula","Větší než nula"],a:0,e:"NPV < 0 znamená, že projekt nevynese ani požadovanou výnosnost, takže výhodný není. Při NPV = 0 je investice na hranici."},
+{n:86,q:"Racionalizace práce je:",o:["Trvalý proces zdokonalování pracovních činností a procesů prostřednictvím optimálního využívání základních faktorů v konkrétním pracovním procesu","Vědní disciplína zabývající se studiem konkrétní lidské práce a řešením vztahů mezi ostatními podnikovými výrobními faktory působícími v průběhu jednotlivých pracovních procesů v daném podniku","Uspořádaný souhrn dějů, v nichž lidé svou prací, obvykle za pomoci pracovních prostředků, přetvářejí pracovní předměty na výsledné výrobky"],a:0,e:"Racionalizace práce je trvalé zlepšování pracovních činností a procesů díky lepšímu využití faktorů práce. Druhá možnost je organizace pracovních procesů, třetí pracovní proces."},
+{n:87,q:"Kterými faktory je posuzována účinnost práce:",o:["Produktivitou živé práce, pracností výrobků","Intenzitou práce, pracností provádění výkonu","Intenzitou práce, efektivností"],a:0,e:"Účinnost práce se měří produktivitou živé práce (Q / T) a pracností (T / Q)."},
+{n:88,q:"Doporučená hodnota okamžité likvidity oběžných aktiv v poměru ke krátkodobým závazkům je v rozmezí:",o:["2–2,5","1–1,5","0,9–1,1"],a:2,e:"Okamžitá likvidita = peněžní prostředky / krátkodobé závazky. Česká literatura uvádí 0,9–1,1."},
+{n:89,q:"Německá klasická škola podnikové organizace je orientována na:",o:["Štábní strukturu a její aplikaci ve středních a velkých podnicích","Dispozitivní úkoly, jejich definování a začlenění do organizační struktury","Zdůrazňování pravidel a řádů, podle nichž má organizace podniku fungovat"],a:1,u:true,e:"Německá klasická škola (Kosiol, Nordsieck, Wöhe) staví na analýze a syntéze úkolů: definuje dispozitivní úkoly a začleňuje je do organizační struktury."},
+{n:90,q:"Rentabilita je:",o:["Zadluženost","Platební schopnost","Výnosnost"],a:2,e:"Rentabilita = výnosnost vloženého kapitálu."},
+{n:92,q:"Doplň vynechané místo: ve schématu chybí nadřazený celek, který zahrnuje Pracovní proces ↔ Technologický proces (+ přírodní vlivy) → Výrobek. Co chybí?",o:["Výrobní proces","Pracovní prostředky","Pracovní síly","Výkonná práce"],a:0,e:"Výrobní proces = pracovní proces + technologický proces, jejichž výsledkem je výrobek."},
+{n:93,q:"Co nepatří mezi hlavní funkce organizace:",o:["Odbyt","Propagace","Výzkum"],a:1,e:"Hlavní funkce podniku jsou výzkum a vývoj, zásobování, výroba a odbyt. Propagace je jen součástí odbytu (marketingu)."},
+{n:94,q:"Metoda „Kaizen“ se zabývá:",o:["Implementací projektovaného organizačního systému","Trvalým zlepšováním technologického postupu","Zeštíhlením stupňů řízení"],a:1,e:"Kaizen (japonsky „změna k lepšímu“) = neustálé zlepšování po malých krocích, hlavně postupů a procesů."}
+];
+const QBY = Object.fromEntries(Q.map(x=>[x.n,x]));
+/* Odstraněné duplicity: starší pokusy se převedou na původní otázku (to) včetně pořadí možností (map). */
+const ALIAS = {39:{to:2,map:[0,1]},66:{to:52,map:[1,2,0]},74:{to:69,map:[2,1,0]},82:{to:54,map:[0,1,2]},91:{to:3,map:[2,1,0]},95:{to:14,map:[1,0,2]}};
+function norm(it){ const al = ALIAS[it.n]; return al ? {n:al.to, c:al.map[it.c], ok:it.ok} : it; }
+
+const LETTERS = ["A","B","C","D","E"];
+const $ = id => document.getElementById(id);
+const ICON = {
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  ko:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M17 7 7 17M7 7l10 10"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>'
+};
+const UNSURE = "Tuhle odpověď nemám stoprocentně ověřenou, klikni u ní v testu na „Vysvětlit otázku“.";
+
+/* ---------- Úložiště: účet (db) + záloha v prohlížeči ---------- */
+const LS_KEY = "kviz-orgproj-attempts-v1";
+const store = { list: [], col: null };
+function loadLocal(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]")||[]; }catch(e){ return []; } }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store.list)); }catch(e){} }
+function sortList(){ store.list.sort((a,b)=>a.ts-b.ts); }
+function setSync(t, on){ const s=$("sync"); s.classList.toggle("on", !!on); s.lastElementChild.textContent = t; }
+function stripId(a){ const {id, ...rest} = a; return rest; }
+
+async function initStore(){
+  store.list = loadLocal(); sortList(); renderHome();
+  setSync("Uloženo v tomto prohlížeči", true);
+}
+async function saveAttempt(a){
+  store.list.push(a); sortList(); saveLocal();
+
+}
+
+/* ---------- Pomocné ---------- */
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pctClass(p){ return p>=80?"good":(p>=60?"warn":"bad"); }
+function pctColor(p){ return p>=80?"var(--good)":(p>=60?"var(--warn)":"var(--bad)"); }
+function fmtDate(ts){ const d=new Date(ts); return d.toLocaleDateString("cs-CZ",{day:"numeric",month:"numeric",year:"numeric"})+" · "+d.toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function isRight(q, o){ return o===q.a || (q.alt||[]).includes(o); }
+function show(v){ ["home","quiz","result","review","all","chal"].forEach(k=>$("v-"+k).hidden = (k!==v)); window.scrollTo(0,0); }
+function wrongSet(){
+  const last = {};
+  for(const a of store.list){ for(const raw of (a.items||[])){ const it = norm(raw); last[it.n] = it.ok; } }
+  return Object.keys(last).filter(n=>last[n]===false && QBY[n]).map(Number);
+}
+function qStats(){
+  const st = {}; Q.forEach(q=>st[q.n]={seen:0,ok:0,ko:0,last:null});
+  for(const a of store.list){ for(const raw of (a.items||[])){ const it = norm(raw); const s=st[it.n]; if(!s) continue; s.seen++; it.ok?s.ok++:s.ko++; s.last = it.ok; } }
+  return st;
+}
+
+/* ---------- Přehled ---------- */
+let chosenN = 20;
+const PRESETS = [10,20,30,50,Q.length];
+function renderSeg(){
+  const seg = $("seg"); seg.innerHTML = "";
+  PRESETS.forEach(n=>{
+    const b = document.createElement("button");
+    b.type="button"; b.className="chipbtn"; b.textContent = n===Q.length ? "Všech "+n : n;
+    b.setAttribute("aria-pressed", String(n===chosenN && !$("customN").value));
+    b.onclick = ()=>{ chosenN=n; $("customN").value=""; renderSeg(); updateHint(); };
+    seg.appendChild(b);
+  });
+}
+function poolSize(){ return $("onlyWrong").checked ? wrongSet().length : Q.length; }
+function updateHint(){
+  const pool = poolSize(), n = Math.min(chosenN, pool);
+  $("startBtn").disabled = pool===0;
+  $("startHint").textContent = pool===0 ? "Zatím nemáš žádné chybné otázky." : (n<chosenN ? "K dispozici je "+pool+" otázek, spustí se všechny." : n+" otázek · cca "+Math.max(1,Math.round(n*0.5))+" min");
+}
+function renderHome(){
+  $("poolCount").textContent = Q.length;
+  const L = store.list;
+  $("sAttempts").textContent = L.length;
+  if(L.length){
+    $("sAvg").innerHTML = Math.round(L.reduce((s,a)=>s+a.pct,0)/L.length)+"<small>%</small>";
+    $("sBest").innerHTML = Math.max(...L.map(a=>a.pct))+"<small>%</small>";
+    $("sLast").innerHTML = L[L.length-1].pct+"<small>%</small>";
+  } else { ["sAvg","sBest","sLast"].forEach(i=>$(i).textContent="–"); }
+  $("wrongCount").textContent = "("+wrongSet().length+")";
+  updateHint();
+  renderBank();
+  const ul = $("hist"); ul.innerHTML = "";
+  if(!L.length){ ul.innerHTML = '<li class="empty" style="display:block">Zatím žádný pokus. Spusť první kvíz a výsledek se tu objeví.</li>'; }
+  [...L].reverse().forEach((a,i)=>{
+    const num = L.length - i;
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="no">#'+String(num).padStart(2,"0")+'</span>'+
+      '<span class="m"><b class="mono">'+a.correct+' / '+a.total+'</b> správně<small class="mono">'+fmtDate(a.ts)+(a.early?' · ukončeno dřív':'')+'</small></span>'+
+      '<span class="score '+pctClass(a.pct)+'">'+a.pct+' %</span>';
+    const b = document.createElement("button"); b.className="btn"; b.textContent="Projít";
+    b.onclick = ()=>openReview(a, num);
+    li.appendChild(b); ul.appendChild(li);
+  });
+  renderTrend();
+}
+function renderBank(){
+  const st = qStats(); const v = Object.values(st);
+  const mastered = v.filter(s=>s.seen && s.last===true).length;
+  const weak = v.filter(s=>s.seen && s.last===false).length;
+  const never = v.filter(s=>!s.seen).length;
+  const T = Q.length;
+  $("bankMeter").innerHTML = '<i style="width:'+(mastered/T*100)+'%;background:var(--good)"></i><i style="width:'+(weak/T*100)+'%;background:var(--bad)"></i>';
+  $("bankLegend").innerHTML =
+    '<span><i style="background:var(--good)"></i><b class="mono">'+mastered+'</b> naposledy správně</span>'+
+    '<span><i style="background:var(--bad)"></i><b class="mono">'+weak+'</b> naposledy špatně</span>'+
+    '<span><i style="background:var(--line-strong)"></i><b class="mono">'+never+'</b> zatím nezobrazeno</span>';
+}
+function renderTrend(){
+  const svg = $("trend"); const L = store.list.slice(-20);
+  if(L.length<2){ svg.hidden = true; return; }
+  svg.hidden = false;
+  const W=600,H=96,pad=8, step=(W-2*pad)/(L.length-1);
+  const y = p=> H-pad - (p/100)*(H-2*pad);
+  const pts = L.map((a,i)=>[pad+i*step, y(a.pct)]);
+  const line = pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const area = line+" L"+pts[pts.length-1][0].toFixed(1)+" "+(H-pad)+" L"+pad+" "+(H-pad)+" Z";
+  const last = pts[pts.length-1];
+  svg.innerHTML =
+    '<defs><linearGradient id="tg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--brand)" stop-opacity=".22"/><stop offset="1" stop-color="var(--brand)" stop-opacity="0"/></linearGradient></defs>'+
+    [100,75,50,25].map(p=>'<line x1="0" x2="'+W+'" y1="'+y(p)+'" y2="'+y(p)+'" stroke="var(--line)" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>').join("")+
+    '<path d="'+area+'" fill="url(#tg)"/>'+
+    '<path d="'+line+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+    '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="5" fill="var(--surface)" stroke="var(--brand)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>';
+}
+$("customN").addEventListener("input", e=>{
+  const v = parseInt(e.target.value,10);
+  if(v>0) chosenN = Math.min(v, Q.length);
+  renderSeg(); updateHint();
+});
+$("onlyWrong").addEventListener("change", updateHint);
+$("startBtn").addEventListener("click", ()=>{
+  const pool = $("onlyWrong").checked ? wrongSet().map(n=>QBY[n]) : Q;
+  startQuiz(pool, chosenN);
+});
+
+/* ---------- Kvíz ---------- */
+let S = null;
+function startQuiz(pool, n, opts){
+  opts = opts || {};
+  const qs = opts.fixed ? pool.slice(0, n) : shuffle(pool).slice(0, Math.min(n, pool.length));
+  if(!qs.length) return;
+  S = { qs: qs.map(q=>({q, perm: shuffle(q.o.map((_,i)=>i))})), i:0, items:[], answered:false, chal: opts.chal||null, t0: Date.now() };
+  $("qChal").hidden = !S.chal; if(S.chal) $("qChal").textContent = "Výzva · "+S.chal.title;
+  $("rail").innerHTML = qs.map(()=>'<i></i>').join("");
+  show("quiz"); renderQ();
+}
+function paintRail(){
+  [...$("rail").children].forEach((el,i)=>{
+    el.className = i<S.items.length ? (S.items[i].ok?"ok":"ko") : (i===S.i?"cur":"");
+  });
+}
+function renderQ(){
+  const cur = S.qs[S.i], q = cur.q, total = S.qs.length;
+  S.answered = false;
+  $("qProg").innerHTML = (S.i+1)+" <small>/ "+total+"</small>";
+  $("qScore").textContent = S.items.filter(x=>x.ok).length+" ✓";
+  $("qNo").textContent = "Otázka č. "+q.n;
+  $("qUnsure").hidden = true;
+  $("qText").textContent = q.q;
+  $("qFb").innerHTML = ""; $("nextBtn").hidden = true; $("kbHint").hidden = false; $("kbHint2").hidden = true;
+  const box = $("qOpts"); box.innerHTML = "";
+  cur.perm.forEach((orig, pos)=>{
+    const b = document.createElement("button");
+    b.type="button"; b.className="opt"; b.dataset.orig = orig;
+    b.innerHTML = '<span class="k">'+LETTERS[pos]+'</span><span>'+esc(q.o[orig])+'</span><span class="mk"></span>';
+    b.onclick = ()=>answer(orig);
+    box.appendChild(b);
+  });
+  paintRail();
+}
+function answer(orig){
+  if(S.answered) return;
+  S.answered = true;
+  const cur = S.qs[S.i], q = cur.q, ok = isRight(q, orig);
+  S.items.push({n:q.n, c:orig, ok});
+  [...$("qOpts").children].forEach(b=>{
+    const o = +b.dataset.orig; b.disabled = true;
+    if(isRight(q, o)){ b.classList.add("correct"); b.querySelector(".mk").innerHTML=ICON.ok; }
+    else if(o===orig){ b.classList.add("wrong"); b.querySelector(".mk").innerHTML=ICON.ko; }
+    else b.classList.add("dim");
+  });
+  const L = LETTERS[cur.perm.indexOf(q.a)];
+  $("qFb").innerHTML = '<div class="fb '+(ok?"good":"bad")+'" role="status">'+
+    '<h3>'+(ok?ICON.ok+"Správně":ICON.ko+"Špatně · správně je "+L)+'</h3>'+
+    (ok?'':'<p class="right">'+esc(q.o[q.a])+'</p>')+
+    '<p>'+esc(q.e)+'</p>'+
+    (q.u?'<div class="note">'+ICON.info+'<span>'+UNSURE+'</span></div>':'')+
+    '</div>';
+  $("qUnsure").hidden = !q.u;
+  $("qScore").textContent = S.items.filter(x=>x.ok).length+" ✓";
+  $("kbHint").hidden = true; $("kbHint2").hidden = false;
+  paintRail();
+  const nb = $("nextBtn"); nb.hidden = false;
+  nb.firstChild.textContent = S.i+1<S.qs.length ? "Další otázka" : "Zobrazit výsledek";
+  nb.focus({preventScroll:true});
+}
+$("nextBtn").addEventListener("click", ()=>{
+  if(S.i+1<S.qs.length){ S.i++; renderQ(); window.scrollTo(0,0); } else finish(false);
+});
+$("quitBtn").addEventListener("click", ()=>{
+  if(!S || !S.items.length){ S=null; renderHome(); show("home"); return; }
+  finish(true);
+});
+document.addEventListener("keydown", e=>{
+  if($("v-quiz").hidden || !S) return;
+  if(!S.answered && /^[1-5]$/.test(e.key)){
+    const btn = $("qOpts").children[+e.key-1]; if(btn){ e.preventDefault(); btn.click(); }
+  } else if(S.answered && e.key==="Enter" && document.activeElement!==$("nextBtn")){ e.preventDefault(); $("nextBtn").click(); }
+});
+
+let lastAttempt = null;
+async function finish(early){
+  const total = S.items.length, correct = S.items.filter(x=>x.ok).length;
+  const pct = Math.round(correct/total*100);
+  const a = { id:"att-"+Date.now(), ts:Date.now(), total, correct, pct, early: !!early, items:S.items };
+  const chal = S.chal, ms = Date.now() - S.t0;
+  if(chal) a.chal = chal.cid;
+  S = null; lastAttempt = a;
+  $("rChal").hidden = !chal; lastChal = chal;
+  $("rPct").textContent = pct+" %";
+  const arc = $("ringArc"); arc.style.stroke = pctColor(pct); arc.style.strokeDashoffset = 326.7;
+  $("rOk").textContent = correct+" správně"; $("rKo").textContent = (total-correct)+" špatně";
+  $("rMsg").textContent = pct>=90 ? "Výborně, tohle umíš." : pct>=75 ? "Dobrý výsledek. Projdi si chyby a bude to za jedna." : pct>=50 ? "Půlka je tam. Zopakuj si chybné otázky." : "Tohle chce ještě projít. Zkus procvičit chybné.";
+  $("rRetryWrong").disabled = correct===total;
+  show("result");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ arc.style.strokeDashoffset = 326.7*(1-pct/100); }));
+  await saveAttempt(a);
+  if(chal && !early) recordChallenge(chal.cid, {pct, correct, total, ms, ts:a.ts});
+  else pushStats();
+  renderHome();
+}
+let lastChal = null;
+$("rChal").addEventListener("click", ()=>{ if(lastChal) openChallenge(lastChal.cid); });
+$("rReview").addEventListener("click", ()=>openReview(lastAttempt, store.list.indexOf(lastAttempt)+1));
+$("rRetryWrong").addEventListener("click", ()=>{
+  const pool = lastAttempt.items.filter(x=>!x.ok).map(x=>QBY[x.n]).filter(Boolean);
+  startQuiz(pool, pool.length);
+});
+$("rHome").addEventListener("click", ()=>{ renderHome(); show("home"); });
+
+/* ---------- Procházení pokusu ---------- */
+let RV = null;
+function openReview(a, num){
+  RV = { a, f:"all" };
+  $("rvTitle").textContent = "Pokus #"+num;
+  $("rvSub").textContent = fmtDate(a.ts)+" · "+a.correct+" / "+a.total+" správně"+(a.early?" · ukončeno dřív":"");
+  const p = $("rvPill"); p.className = "score "+pctClass(a.pct); p.textContent = a.pct+" %";
+  [...$("rvFilter").children].forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.f==="all")));
+  renderReview(); show("review");
+}
+function renderReview(){
+  const box = $("rvList"); box.innerHTML = "";
+  const items = RV.a.items.map(norm).filter(it=> RV.f==="all" || (RV.f==="ok"?it.ok:!it.ok));
+  if(!items.length){ box.innerHTML = '<p class="empty">V tomto filtru nejsou žádné otázky.</p>'; return; }
+  items.forEach(it=>{
+    const q = QBY[it.n]; if(!q) return;
+    const d = document.createElement("div");
+    d.className = "item "+(it.ok?"ok":"ko");
+    d.innerHTML = '<span class="tag">Otázka č. '+q.n+'</span>'+
+      '<div class="q">'+esc(q.q)+'</div>'+
+      '<div class="ans '+(it.ok?"ok":"ko")+'">'+(it.ok?ICON.ok:ICON.ko)+'<span><b>Tvoje odpověď:</b> '+esc(q.o[it.c])+'</span></div>'+
+      (it.ok?'':'<div class="ans ok">'+ICON.ok+'<span><b>Správně:</b> '+esc(q.o[q.a])+'</span></div>')+
+      '<div class="ex">'+esc(q.e)+(q.u?' <span class="w">Odpověď není stoprocentně ověřená.</span>':'')+'</div>';
+    box.appendChild(d);
+  });
+}
+[...$("rvFilter").children].forEach(b=>b.addEventListener("click", ()=>{
+  RV.f = b.dataset.f;
+  [...$("rvFilter").children].forEach(x=>x.setAttribute("aria-pressed", String(x===b)));
+  renderReview();
+}));
+$("rvBack").addEventListener("click", ()=>{ renderHome(); show("home"); });
+
+/* ---------- Všechny otázky ---------- */
+let allExpanded = false;
+function renderAll(){
+  const st = qStats(); const vals = Object.values(st);
+  const seenQ = vals.filter(s=>s.seen>0).length;
+  const sumOk = vals.reduce((t,s)=>t+s.ok,0), sumSeen = vals.reduce((t,s)=>t+s.seen,0);
+  $("aTotal").textContent = Q.length;
+  $("aSeen").textContent = seenQ;
+  $("aRate").textContent = sumSeen ? Math.round(sumOk/sumSeen*100)+" %" : "–";
+  $("aNever").textContent = Q.length - seenQ;
+  const term = $("aSearch").value.trim().toLowerCase();
+  const f = $("aFilter").value, sort = $("aSort").value;
+  let list = Q.filter(q=>{
+    const s = st[q.n];
+    if(f==="wrong" && !s.ko) return false;
+    if(f==="never" && s.seen) return false;
+    if(f==="perfect" && !(s.seen && !s.ko)) return false;
+    if(term && !(q.n+" "+q.q+" "+q.o.join(" ")).toLowerCase().includes(term)) return false;
+    return true;
+  });
+  const rate = s=> s.seen ? s.ok/s.seen : 2;
+  if(sort==="wrong") list.sort((x,y)=>st[y.n].ko-st[x.n].ko || x.n-y.n);
+  else if(sort==="rate") list.sort((x,y)=>rate(st[x.n])-rate(st[y.n]) || st[y.n].ko-st[x.n].ko || x.n-y.n);
+  else if(sort==="seen") list.sort((x,y)=>st[y.n].seen-st[x.n].seen || x.n-y.n);
+  else list.sort((x,y)=>x.n-y.n);
+  $("aCount").textContent = list.length+" z "+Q.length+" otázek";
+  const box = $("aList"); box.innerHTML = "";
+  if(!list.length){ box.innerHTML = '<p class="empty">Tomuto filtru neodpovídá žádná otázka.</p>'; return; }
+  list.forEach(q=>{
+    const s = st[q.n];
+    const d = document.createElement("details");
+    d.className = "item"+(s.seen ? (s.last?" ok":" ko") : ""); d.open = allExpanded;
+    const counts = s.seen
+      ? '<span class="c">'+s.seen+'× zobrazeno</span><span class="c ok">✓ '+s.ok+'</span><span class="c ko">✗ '+s.ko+'</span>'
+      : '<span class="c">Zatím nezobrazeno</span>';
+    d.innerHTML = '<summary><span class="no">'+String(q.n).padStart(2,"0")+'</span><span><span class="qt">'+esc(q.q)+'</span><span class="counts">'+counts+(q.u?'<span class="c" style="color:var(--warn)">k ověření</span>':'')+'</span></span>'+ICON.chev+'</summary>'+
+      '<div class="body"><ol>'+q.o.map((o,i)=>'<li class="'+(isRight(q,i)?"right":"")+'"><span class="l">'+LETTERS[i]+'</span><span>'+esc(o)+'</span></li>').join("")+'</ol>'+
+      '<div class="ex">'+esc(q.e)+(q.u?' <span class="w">Odpověď není stoprocentně ověřená.</span>':'')+'</div></div>';
+    box.appendChild(d);
+  });
+}
+$("allBtn").addEventListener("click", ()=>{ renderAll(); show("all"); });
+$("allBack").addEventListener("click", ()=>{ renderHome(); show("home"); });
+$("aSearch").addEventListener("input", renderAll);
+$("aFilter").addEventListener("change", renderAll);
+$("aSort").addEventListener("change", renderAll);
+$("aExpand").addEventListener("click", ()=>{
+  allExpanded = !allExpanded;
+  $("aExpand").textContent = allExpanded ? "Sbalit vše" : "Rozbalit vše";
+  [...$("aList").children].forEach(d=>{ if(d.tagName==="DETAILS") d.open = allExpanded; });
+});
+
+/* ---------- Soutěž bez serveru: výzvy přes kódy ---------- */
+const NICK_KEY="kviz-orgproj-nick", CH_KEY="kviz-orgproj-challenges";
+const COMP = { formOpen:false, chOpen:null, err:"" };
+function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+let NICK = lsGet(NICK_KEY, "");
+let CH = lsGet(CH_KEY, {});            // { code: {title, n, seed, ts, mine:{...}|null, others:{key:{nick,correct,total,ms}}} }
+function saveCh(){ lsSet(CH_KEY, CH); }
+const AV_COLORS = ["#17553a","#2c7f74","#7a5c1e","#5b4b8a","#9b3d3d","#2f5f8a","#6d7a1f","#8a3d6d"];
+function avColor(id){ let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))>>>0; return AV_COLORS[h%AV_COLORS.length]; }
+function avatar(nick){ return '<span class="avatar" style="background:'+avColor(nick.toLowerCase())+'">'+esc((nick||"?").trim().charAt(0).toUpperCase()||"?")+'</span>'; }
+function fmtMs(ms){ const s=Math.round(ms/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function rankCell(i){ return i<3 ? '<span class="medal m'+(i+1)+'">'+(i+1)+'</span>' : (i+1)+'.'; }
+function hash36(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(36).slice(-4); }
+function chalCode(n, seed){ return n+"-"+seed.toString(36); }
+function parseChalCode(code){
+  const m = String(code).trim().toLowerCase().match(/^(\d{1,3})-([0-9a-z]{1,8})$/);
+  if(!m) return null; const n=parseInt(m[1],10), seed=parseInt(m[2],36);
+  if(!(n>=1 && n<=Q.length) || !Number.isFinite(seed)) return null;
+  return {n, seed, code: chalCode(n, seed)};
+}
+function pageUrl(){ return /^https?:/.test(location.protocol) ? location.href.split("#")[0] : ""; }
+function inviteText(c, code){
+  const url = pageUrl();
+  return "Výzva v kvízu z organizace a projektů: „"+c.title+"“ ("+c.n+" otázek). "+
+    (url ? "Otevři "+url+"#vyzva="+code+"&nazev="+encodeURIComponent(c.title)+" " : "Otevři kvíz, ")+"nebo zadej kód výzvy: "+code;
+}
+function resultLine(code, r){
+  const core = "KVIZ|"+code+"|"+r.nick.replace(/\|/g,"/")+"|"+r.correct+"/"+r.total+"|"+r.ms;
+  return core+"|"+hash36(core+"|orgproj");
+}
+function resultText(c, code, r){
+  return r.nick+" má ve výzvě „"+c.title+"“ "+r.correct+"/"+r.total+" ("+r.pct+" %) za "+fmtMs(r.ms)+". Kód výsledku: "+resultLine(code, r);
+}
+function parseResults(text){
+  const out=[]; const re=/KVIZ\|([0-9a-z]+-[0-9a-z]+)\|([^|\n]{1,24})\|(\d{1,3})\/(\d{1,3})\|(\d{1,9})\|([0-9a-z]{1,4})/gi; let m;
+  while((m=re.exec(text))){
+    const core="KVIZ|"+m[1].toLowerCase()+"|"+m[2]+"|"+m[3]+"/"+m[4]+"|"+m[5];
+    out.push({ code:m[1].toLowerCase(), nick:m[2].trim(), correct:+m[3], total:+m[4], ms:+m[5], valid: hash36(core+"|orgproj")===m[6].toLowerCase() });
+  }
+  return out;
+}
+async function copyText(txt, msgEl){
+  let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){
+    try{ const ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); ok=document.execCommand("copy"); ta.remove(); }catch(e2){}
+  }
+  if(msgEl) msgEl.textContent = ok ? "Zkopírováno" : "Označ text a zkopíruj ho ručně";
+}
+async function shareText(title, txt, msgEl){
+  try{ await navigator.share({title, text: txt}); }catch(e){ if(e && e.name!=="AbortError") copyText(txt, msgEl); }
+}
+const canShare = typeof navigator.share === "function";
+
+function compUnavailable(){ renderComp(); }
+function pushStats(){}
+function recordChallenge(cid, res){
+  const c = CH[cid]; if(!c) return;
+  if(!c.mine) { c.mine = Object.assign({nick: NICK || "Já"}, res); saveCh(); }
+  renderComp();
+}
+function renderComp(){
+  const body = $("compBody"), chip = $("meChip");
+  if(!NICK || COMP.editNick){
+    chip.hidden = true;
+    body.innerHTML = '<p class="sub" style="margin:0">Nejdřív si zvol přezdívku. Uvidí ji kamarádi u tvých výsledků.</p>'+
+      '<form class="joinrow" id="joinForm"><input id="nickIn" maxlength="24" placeholder="Tvoje přezdívka" aria-label="Přezdívka" value="'+esc(NICK)+'"><button class="btn primary" type="submit">Uložit</button>'+(NICK?'<button class="btn ghost" type="button" id="nickCancel">Zrušit</button>':'')+'</form>'+
+      (COMP.err?'<p class="msg err">'+esc(COMP.err)+'</p>':'');
+    $("joinForm").onsubmit = e=>{ e.preventDefault(); const v=$("nickIn").value.trim().replace(/\|/g,"/").slice(0,24); if(v.length<2){ COMP.err="Přezdívka musí mít aspoň 2 znaky."; renderComp(); return; } NICK=v; lsSet(NICK_KEY,v); COMP.err=""; COMP.editNick=false; renderComp(); };
+    if(NICK) $("nickCancel").onclick = ()=>{ COMP.editNick=false; renderComp(); };
+    return;
+  }
+  chip.hidden = false;
+  chip.innerHTML = avatar(NICK)+'<span>Hraješ jako <b></b></span><button class="linkbtn" id="nickEdit">změnit</button>';
+  chip.querySelector("b").textContent = NICK;
+  $("nickEdit").onclick = ()=>{ COMP.editNick=true; renderComp(); };
+  let html = (COMP.err?'<p class="msg err">'+esc(COMP.err)+'</p>':'');
+  html += COMP.formOpen
+    ? '<form class="cform" id="chForm"><input id="chName" maxlength="40" placeholder="Název výzvy, např. Před zkouškou" aria-label="Název výzvy"><select class="select" id="chN" aria-label="Počet otázek"><option value="10">10 otázek</option><option value="20" selected>20 otázek</option><option value="30">30 otázek</option><option value="'+Q.length+'">Všech '+Q.length+'</option></select><button class="btn primary" type="submit">Vytvořit</button><button class="btn ghost" type="button" id="chCancel">Zrušit</button></form>'
+    : '<div class="row" style="margin-bottom:6px"><button class="btn primary" id="chNew">Nová výzva</button><form class="row" id="joinCode" style="gap:8px;flex:1 1 260px"><input id="codeIn" placeholder="Mám kód, např. 20-k3x9ab" aria-label="Kód výzvy" style="flex:1 1 160px;height:44px;padding:0 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:500 .95rem var(--mono)"><button class="btn" type="submit">Připojit se</button></form></div>';
+  const list = Object.entries(CH).sort((a,b)=>b[1].ts-a[1].ts);
+  html += list.length ? '<div style="margin-top:8px">'+list.map(([code,c])=>{
+    const n = 1+Object.keys(c.others||{}).length - (c.mine?0:1);
+    return '<div class="chal"><div><div class="t">'+esc(c.title)+'</div><small class="mono">'+c.n+' otázek · kód '+code+' · '+Math.max(n,0)+' výsledků</small>'+
+      '<small>'+(c.mine?'Tvůj výsledek: <b class="mono">'+c.mine.pct+' %</b> ('+c.mine.correct+'/'+c.mine.total+', '+fmtMs(c.mine.ms)+')':'Ještě jsi nehrál')+'</small></div>'+
+      '<div class="acts"><button class="btn" data-open="'+code+'">Otevřít</button><button class="btn '+(c.mine?'':'primary')+'" data-play="'+code+'">'+(c.mine?'Hrát znovu':'Hrát')+'</button></div></div>';
+  }).join("")+'</div>' : '<p class="empty">Zatím žádná výzva. Založ první nebo zadej kód od kamaráda.</p>';
+  body.innerHTML = html;
+  body.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openChallenge(b.dataset.open));
+  body.querySelectorAll("[data-play]").forEach(b=>b.onclick=()=>playChallenge(b.dataset.play));
+  if($("chNew")) $("chNew").onclick = ()=>{ COMP.formOpen=true; renderComp(); $("chName").focus(); };
+  if($("chCancel")) $("chCancel").onclick = ()=>{ COMP.formOpen=false; renderComp(); };
+  if($("joinCode")) $("joinCode").onsubmit = e=>{ e.preventDefault(); joinByCode($("codeIn").value, ""); };
+  if($("chForm")) $("chForm").onsubmit = e=>{
+    e.preventDefault();
+    const title = $("chName").value.trim().slice(0,40) || ("Výzva "+new Date().toLocaleDateString("cs-CZ"));
+    const n = Math.min(Q.length, parseInt($("chN").value,10)||20);
+    const seed = Math.floor(Math.random()*2147483647);
+    const code = chalCode(n, seed);
+    CH[code] = { title, n, seed, ts: Date.now(), mine:null, others:{} }; saveCh();
+    COMP.formOpen=false; renderComp(); openChallenge(code);
+  };
+}
+function joinByCode(raw, title){
+  const p = parseChalCode(raw);
+  if(!p){ COMP.err = "Tenhle kód výzvy nevypadá správně. Má tvar číslo-písmena, např. 20-k3x9ab."; renderComp(); return; }
+  COMP.err = "";
+  if(!CH[p.code]){ CH[p.code] = { title: title || ("Výzva "+p.code), n:p.n, seed:p.seed, ts: Date.now(), mine:null, others:{} }; saveCh(); }
+  else if(title && CH[p.code].title.startsWith("Výzva ")){ CH[p.code].title = title; saveCh(); }
+  renderComp(); openChallenge(p.code);
+}
+function seededShuffle(arr, seed){
+  let s = seed>>>0; const rnd = ()=>{ s = (s + 0x6D2B79F5)>>>0; let t = s; t = Math.imul(t ^ (t>>>15), t | 1); t ^= t + Math.imul(t ^ (t>>>7), t | 61); return ((t ^ (t>>>14))>>>0)/4294967296; };
+  const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a;
+}
+function playChallenge(code){
+  const c = CH[code]; if(!c) return;
+  if(!NICK){ COMP.err="Nejdřív si zvol přezdívku."; renderComp(); show("home"); return; }
+  const qs = seededShuffle(Q.slice().sort((a,b)=>a.n-b.n), c.seed).slice(0, Math.min(c.n, Q.length));
+  startQuiz(qs, qs.length, { fixed:true, chal:{ cid:code, title:c.title } });
+}
+function openChallenge(code){ COMP.chOpen = code; $("chInvMsg").textContent=""; $("chAddMsg").textContent=""; $("chPaste").value=""; renderChallenge(); show("chal"); }
+function chalRows(code){
+  const c = CH[code], rows = [];
+  if(c.mine) rows.push(Object.assign({me:true}, c.mine));
+  Object.values(c.others||{}).forEach(o=>rows.push(Object.assign({me:false, pct: Math.round(o.correct/o.total*100)}, o)));
+  return rows.sort((a,b)=> b.pct-a.pct || a.ms-b.ms);
+}
+function renderChallenge(){
+  const code = COMP.chOpen, c = CH[code]; if(!c) return;
+  $("chTitle").textContent = c.title; $("chCode").textContent = code;
+  const rows = chalRows(code);
+  $("chSub").textContent = c.n+" otázek · "+rows.length+" výsledků";
+  $("chPlay").textContent = c.mine ? "Hrát znovu" : "Hrát výzvu";
+  $("chInvite").value = inviteText(c, code);
+  $("chInvShare").hidden = !canShare;
+  const mine = $("chMine");
+  if(c.mine){
+    const txt = resultText(c, code, c.mine);
+    mine.innerHTML = '<p class="sub">Pošli tuhle zprávu kamarádům, ať tě mají v pořadí.</p><textarea class="codebox" id="chMyRes" readonly rows="3" aria-label="Tvůj výsledek"></textarea>'+
+      '<div class="row"><button class="btn" id="chResCopy">Kopírovat</button>'+(canShare?'<button class="btn" id="chResShare">Sdílet…</button>':'')+'<span class="hint" id="chResMsg"></span></div>';
+    $("chMyRes").value = txt;
+    $("chResCopy").onclick = ()=>copyText(txt, $("chResMsg"));
+    if(canShare) $("chResShare").onclick = ()=>shareText(c.title, txt, $("chResMsg"));
+  } else {
+    mine.innerHTML = '<p class="sub">Ještě jsi výzvu nehrál. Po dokončení se ti tu objeví zpráva s výsledkem, kterou pošleš ostatním.</p><button class="btn primary" id="chPlay2">Hrát výzvu</button>';
+    $("chPlay2").onclick = ()=>playChallenge(code);
+  }
+  $("chTable").innerHTML = '<thead><tr><th>#</th><th>Hráč</th><th>Výsledek</th><th class="hide-s">Správně</th><th>Čas</th></tr></thead><tbody>'+
+    (rows.length ? rows.map((r,i)=>'<tr class="'+(r.me?"me":"")+'"><td class="r">'+rankCell(i)+'</td><td class="p"><span class="who">'+avatar(r.nick)+'<span>'+esc(r.nick)+(r.me?' <span class="youtag">ty</span>':'')+'</span></span></td><td>'+r.pct+' %</td><td class="hide-s">'+r.correct+' / '+r.total+'</td><td>'+fmtMs(r.ms)+'</td></tr>').join("")
+      : '<tr><td colspan="5" style="text-align:left;font-family:var(--body);color:var(--muted)">Zatím žádné výsledky.</td></tr>')+'</tbody>';
+}
+$("chInvCopy").addEventListener("click", ()=>copyText($("chInvite").value, $("chInvMsg")));
+$("chInvShare").addEventListener("click", ()=>{ const c=CH[COMP.chOpen]; shareText(c?c.title:"Výzva", $("chInvite").value, $("chInvMsg")); });
+$("chAdd").addEventListener("click", ()=>{
+  const code = COMP.chOpen, c = CH[code]; if(!c) return;
+  const found = parseResults($("chPaste").value);
+  let added=0, other=0, bad=0;
+  found.forEach(r=>{
+    if(r.code!==code){ other++; return; }
+    if(!r.valid || r.total!==c.n || r.correct>r.total){ bad++; return; }
+    if(c.mine && r.nick===c.mine.nick && r.ms===c.mine.ms) return;
+    const key = r.nick.toLowerCase();
+    if(!c.others[key]) { c.others[key] = {nick:r.nick, correct:r.correct, total:r.total, ms:r.ms}; added++; }
+  });
+  saveCh(); renderChallenge(); renderComp();
+  $("chAddMsg").textContent = !found.length ? "V textu jsem nenašel žádný kód výsledku." :
+    "Přidáno: "+added+(other?" · z jiné výzvy: "+other:"")+(bad?" · neplatné: "+bad:"");
+  if(added) $("chPaste").value="";
+});
+$("chBack").addEventListener("click", ()=>{ renderHome(); show("home"); });
+$("chPlay").addEventListener("click", ()=>{ if(COMP.chOpen) playChallenge(COMP.chOpen); });
+// otevření výzvy z odkazu: #vyzva=20-k3x9ab&nazev=...
+function fromHash(){
+  const h = location.hash.slice(1); if(!h.startsWith("vyzva=")) return;
+  const params = new URLSearchParams(h);
+  joinByCode(params.get("vyzva")||"", (params.get("nazev")||"").slice(0,40));
+}
+window.addEventListener("hashchange", fromHash);
+
+/* ---------- Animované pozadí (plynulá smyčka 24 s) ---------- */
+(function(){
+  const PERIOD = 24;                       // délka jedné smyčky v sekundách
+  const W0 = Math.PI*2/PERIOD;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function rgba(hex, a){
+    const m = hex.replace("#",""); if(m.length<6) return "rgba(95,196,144,"+a+")";
+    return "rgba("+parseInt(m.slice(0,2),16)+","+parseInt(m.slice(2,4),16)+","+parseInt(m.slice(4,6),16)+","+a+")";
+  }
+  function setup(canvas){
+    const ctx = canvas.getContext("2d");
+    const st = {canvas, ctx, w:0, h:0};
+    const fit = ()=>{
+      const r = canvas.getBoundingClientRect(), d = Math.min(window.devicePixelRatio||1, 1.75);
+      st.w = r.width; st.h = r.height;
+      canvas.width = Math.max(1, Math.round(r.width*d)); canvas.height = Math.max(1, Math.round(r.height*d));
+      ctx.setTransform(d,0,0,d,0,0);
+    };
+    fit(); st.fit = fit;
+    return st;
+  }
+  // vlnité vrstevnice; všechny frekvence v čase jsou celé násobky W0, takže smyčka navazuje bez skoku
+  function waves(st, t, n, color, alphaMax, ampK, lw){
+    const {ctx, w, h} = st, step = Math.max(14, w/48);
+    for(let i=0;i<n;i++){
+      const base = h*(i+0.5)/n, amp = h*ampK*(0.7+0.3*Math.sin(i*1.7));
+      const a = alphaMax*(0.35+0.65*(0.5+0.5*Math.sin(i*0.9 + W0*t)));
+      ctx.beginPath();
+      for(let x=-step; x<=w+step; x+=step){
+        const y = base + amp*(0.62*Math.sin(x*0.0062 + i*0.42 + W0*t) + 0.38*Math.sin(x*0.011 - i*0.27 - 2*W0*t));
+        x<=-step ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = rgba(color, a); ctx.lineWidth = lw; ctx.stroke();
+    }
+  }
+  function blob(st, x, y, r, color, a){
+    const g = st.ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0, rgba(color,a)); g.addColorStop(1, rgba(color,0));
+    st.ctx.fillStyle = g; st.ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  let mast = null, bg = null, quizSt = null, resSt = null, colors = {};
+  function readColors(){
+    const dark = css("--bg").toLowerCase()==="#0b100d";
+    colors = {
+      glowA: dark ? "#2f8a5e" : "#3f9a6c",
+      glowB: dark ? "#1f6f68" : "#2c7f74",
+      glowC: dark ? "#6a8f3a" : "#8fae4a",
+      line:  "#d8efe2",
+      mint:  "#a8f5cc",
+      wire:  "#4fd394",
+      bgLine: css("--brand") || "#17553a",
+      bgA: dark ? 0.10 : 0.09
+    };
+  }
+  // 3D terén z bodů: výšky jsou periodické ve světové ose z (perioda S řad) i v čase (násobky W0) => smyčka bez švu
+  function terrain(st, t){
+    const {ctx,w,h} = st;
+    const COLS = w<520 ? 38 : (w<900 ? 54 : 70), ROWS = 34, S = 34;
+    const scroll = (t/PERIOD)*S, base = Math.floor(scroll), fr = scroll - base;
+    const horizon = h*(st.hz||0.26), f = Math.min(w*0.42, h*0.95), camH = (h - horizon)/f*1.02;
+    const spanX = (w/2)*(1+ROWS*0.13)/f*1.05, amp = 0.30, TAU = Math.PI*2;
+    let prev = null;
+    for(let j=ROWS; j>=0; j--){
+      const d = j - fr; if(d < -0.95) { prev = null; continue; }
+      const zc = 1 + Math.max(d,-0.9)*0.13;
+      const zw = base + j, u = zw*TAU/S;
+      const near = Math.min(1, (d+0.95)/1.6), far = Math.min(1, (ROWS-d)/7);
+      const fade = Math.max(0, Math.min(near, far));
+      const pulse = (((zw % 17) + 17) % 17) === 0 ? 1 : 0;      // zářící pás, jede s terénem
+      const pts = new Array(COLS+1);
+      for(let i=0;i<=COLS;i++){
+        const x = (i/COLS*2-1)*spanX;
+        const hh = 0.55*Math.sin(x*0.55 + 2*u) + 0.32*Math.sin(x*1.1 - 3*u + 1.3) + 0.22*Math.sin(x*0.23 + u + 2.1)*Math.cos(x*0.4 - u)
+                 + 0.12*Math.sin(W0*t + x*0.7);
+        const valley = Math.min(1, Math.abs(x)/(spanX*0.18) + 0.25);   // uprostřed nižší údolí
+        const H = hh*valley;
+        pts[i] = [w/2 + x*f/zc, horizon + (camH - H*amp)*f/zc, H];
+      }
+      // čáry řady
+      ctx.lineWidth = pulse ? 1.6 : 1;
+      ctx.strokeStyle = pulse ? rgba(colors.mint, 0.75*fade) : rgba(colors.wire, 0.30*fade);
+      ctx.beginPath();
+      for(let i=0;i<=COLS;i++){ const p=pts[i]; i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); }
+      ctx.stroke();
+      // spojnice k vzdálenější řadě (síť)
+      if(prev){
+        ctx.lineWidth = 1; ctx.strokeStyle = rgba(colors.wire, 0.16*fade);
+        ctx.beginPath();
+        for(let i=0;i<=COLS;i++){ ctx.moveTo(prev[i][0],prev[i][1]); ctx.lineTo(pts[i][0],pts[i][1]); }
+        ctx.stroke();
+      }
+      // body, vrcholy září
+      for(let i=0;i<=COLS;i++){
+        const p = pts[i], k = Math.max(0, Math.min(1, (p[2]+0.2)/1.1));
+        const r = Math.max(0.7, 2.4/zc) * (0.8 + 0.6*k);
+        ctx.fillStyle = rgba(k>0.62 ? colors.mint : colors.wire, fade*(0.25 + 0.75*k));
+        ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, TAU); ctx.fill();
+      }
+      prev = pts;
+    }
+  }
+  function drawMast(t, st){
+    st = st || mast; const {ctx,w,h} = st;
+    ctx.clearRect(0,0,w,h);
+    ctx.globalCompositeOperation = "lighter";
+    const R = Math.max(w,h);
+    blob(st, w*(0.50+0.06*Math.sin(W0*t)), h*((st.hz||0.26)+0.01), R*0.42, colors.glowA, 0.55);              // záře nad obzorem
+    blob(st, w*(0.78+0.16*Math.sin(W0*t+1.0)), h*(0.15+0.12*Math.sin(2*W0*t)), R*0.35, colors.glowB, 0.35);
+    blob(st, w*(0.18+0.14*Math.cos(W0*t+0.5)), h*(0.20+0.10*Math.cos(2*W0*t+1)), R*0.30, colors.glowC, 0.20);
+    terrain(st, t);
+    ctx.globalCompositeOperation = "source-over";
+    // horizont
+    const g = ctx.createLinearGradient(0,0,w,0);
+    g.addColorStop(0, rgba(colors.mint,0)); g.addColorStop(0.5, rgba(colors.mint,0.55)); g.addColorStop(1, rgba(colors.mint,0));
+    ctx.fillStyle = g; ctx.fillRect(0, h*(st.hz||0.26)-0.5, w, 1);
+  }
+  function drawBg(t){
+    const st = bg, {ctx,w,h} = st;
+    ctx.clearRect(0,0,w,h);
+    waves(st, t+PERIOD/3, 18, colors.bgLine, colors.bgA, 0.05, 1);
+  }
+  let t0 = performance.now(), raf = 0;
+  function frame(now){
+    const t = ((now - t0)/1000) % PERIOD;
+    if(!$("v-home").hidden) drawMast(t, mast);
+    else if(!$("v-quiz").hidden) drawMast(t, quizSt);
+    else if(!$("v-result").hidden) drawMast(t, resSt);
+    drawBg(t);
+    raf = requestAnimationFrame(frame);
+  }
+  function start(){
+    mast = setup($("mastFx")); mast.hz = 0.56; bg = setup($("bgFx")); quizSt = setup($("quizFx")); resSt = setup($("resultFx")); readColors();
+    cancelAnimationFrame(raf);
+    if(reduce.matches){ drawMast(4); drawBg(4); return; }   // bez animace jen statický snímek
+    raf = requestAnimationFrame(frame);
+  }
+  let rs; window.addEventListener("resize", ()=>{ clearTimeout(rs); rs = setTimeout(()=>{ [mast,bg,quizSt,resSt].forEach(s=>s.fit()); if(reduce.matches){ drawMast(4); drawBg(4); } }, 120); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
+  new MutationObserver(readColors).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+  reduce.addEventListener("change", start);
+  // když se zobrazí jiná obrazovka, znovu změřit její plátno (dokud byla skrytá, mělo nulovou velikost)
+  [["v-home",()=>mast],["v-quiz",()=>quizSt],["v-result",()=>resSt]].forEach(([id,get])=>{
+    new MutationObserver(()=>{ const st=get(); if(!$(id).hidden && st){ st.fit(); if(reduce.matches) drawMast(4, st); } }).observe($(id), {attributes:true, attributeFilter:["hidden"]});
+  });
+  start();
+})();
+
+/* ---------- Start ---------- */
+renderSeg(); renderHome(); initStore(); renderComp(); fromHash();
+</script>
+</body>
+</html>
